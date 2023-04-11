@@ -1,0 +1,78 @@
+#include <VarSpeedServo.h>
+
+#define PIN_SERVO_BOTTOM 5
+#define PIN_SERVO_TOP    6
+
+#define PIN_LDR_NO A0
+#define PIN_LDR_NW A1
+#define PIN_LDR_SO A2
+#define PIN_LDR_SW A3
+
+#define LDR_SENSITIVITY 10
+#define SERVO_STEP       2
+
+#define SERVO_ROTATE_MIN   0
+#define SERVO_ROTATE_MAX 170
+#define SERVO_TILT_MIN    10
+#define SERVO_TILT_MAX    90
+
+VarSpeedServo servoRotate, servoTilt;
+byte posRotate, posTilt;
+int ldrNo, ldrNw, ldrSo, ldrSw, diff;
+
+void setup()
+{
+    servoRotate.attach(PIN_SERVO_BOTTOM);
+    servoTilt.attach(PIN_SERVO_TOP);
+
+    // move servos to center position
+    posRotate = (int)((SERVO_ROTATE_MAX-SERVO_ROTATE_MIN)/2);
+    servoRotate.write(posRotate, 20, true);
+
+    posTilt = (int)((SERVO_TILT_MAX-SERVO_TILT_MIN)/2);
+    servoTilt.write(posTilt, 20, true);
+}
+
+void loop()
+{
+    ldrNo = analogRead(PIN_LDR_NO);
+    ldrNw = analogRead(PIN_LDR_NW);
+    ldrSo = analogRead(PIN_LDR_SO);
+    ldrSw = analogRead(PIN_LDR_SW);
+
+    diff = (ldrNo + ldrNw)/2 - (ldrSo + ldrSw)/2;
+    if (abs(diff) > LDR_SENSITIVITY) {
+        if (diff < 0) {
+            if (posTilt + SERVO_STEP <= SERVO_TILT_MAX) {
+                posTilt+=SERVO_STEP;
+                servoTilt.write(posTilt+SERVO_STEP, 10, true);
+            }
+        } else {
+            if (posTilt - SERVO_STEP >= SERVO_TILT_MIN) {
+                posTilt-=SERVO_STEP;
+                servoTilt.write(posTilt-SERVO_STEP, 10, true);
+            }
+        }
+    }
+
+    diff = (ldrNo + ldrSo)/2 - (ldrNw + ldrSw)/2;
+    if (abs(diff) > LDR_SENSITIVITY) {
+        if (diff < 0) {
+            if (posRotate + SERVO_STEP <= SERVO_ROTATE_MAX) {
+                posRotate+=SERVO_STEP;
+                servoRotate.write(posRotate+SERVO_STEP, 10, true);
+            }
+        } else {
+            if (posRotate - SERVO_STEP >= SERVO_ROTATE_MIN) {
+                posRotate-=SERVO_STEP;
+                servoRotate.write(posRotate-SERVO_STEP, 10, true);
+            }
+        }
+    }
+
+    // wait until both servos are in new position
+    while(servoTilt.isMoving() && servoRotate.isMoving()) {}
+
+    // optional delay between measurings
+    // delay(1000);
+}

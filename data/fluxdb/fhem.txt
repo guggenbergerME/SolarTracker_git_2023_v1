@@ -1,0 +1,4 @@
+define influxDB InfluxDBLogger http://192.168.1.2/:8086 fhem DB_Temp_Hum,KU_Temp_Hum,FL_Temp_Hum
+attr influxDB api v2
+attr influxDB org fhem
+attr influxDB security d46W1hgMpMmxpPxlRPeldYBl0tv7oC7P42tyGEqs6ErWMnunsVVqEaKrkWSdXCTYNePSrPm3AhxTPWsMcqKUxw==
