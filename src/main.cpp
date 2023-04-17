@@ -46,13 +46,13 @@ Sensor-Leitung orange +5V
 Sensor-Leitung weis Masse
 */
 int oben_links;
-const int ldr_oben_links = 33; //ADC1_6   - LDR OL - Sensor-Leitung blau
+const int ldr_oben_links = 33; //ADC1_6   - LDR OL - Sensor-Leitung blau  (NO)
 int oben_rechts;
-const int ldr_oben_rechts = 32; //ADC1_7  - LDR OR - Sensor-Leitung braun
+const int ldr_oben_rechts = 32; //ADC1_7  - LDR OR - Sensor-Leitung braun (NW)
 int unten_links;
-const int ldr_unten_links = 34; //ADC1_8  - LDR UL - Sensor-Leitung grün
+const int ldr_unten_links = 34; //ADC1_8  - LDR UL - Sensor-Leitung grün  (SO)
 int unten_rechts;
-const int ldr_unten_rechts = 35; //ADC1_9 - LDR UR - Sensor-Leitung weiss
+const int ldr_unten_rechts = 35; //ADC1_9 - LDR UR - Sensor-Leitung weiss (SW)
 
 /////////////////////////////////////////////////////////////////////////// Funktionsprototypen
 void loop                       ();
