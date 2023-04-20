@@ -22,6 +22,9 @@ unsigned long interval_panelsenkrecht = 1000;
 unsigned long previousMillis_nachtstellung_pruefen = 0; // Sturmschutz Schalter prüfen
 unsigned long interval_nachtstellung_pruefen = 2500; 
 
+unsigned long previousMillis_mqttbewegung_pruefen = 0; // Sturmschutz Schalter prüfen
+unsigned long interval_mqttbewegung_pruefen = 1000; 
+
 /////////////////////////////////////////////////////////////////////////// Systemvariablen
 int global_sturmschutz = 0; // Gloaber Sturmschutz zur abfrage
 int nachstellung_merker = 0; // Registriert die Nachstellung und wird morgens resetet.
@@ -76,6 +79,8 @@ void sturmschutzschalter        ();
 void panel_senkrecht            ();
 void nachtstellung              ();
 void mqtt_connected             ();
+void mqtt_Sturmschutz           ();
+void mqtt_panele_senkrecht      ();
 
 
 /////////////////////////////////////////////////////////////////////////// Kartendaten 
@@ -442,11 +447,8 @@ void sturmschutzschalter() {
       {
         //Serial.println("Alles unterbrechen wegen Windschutz!");
         client.publish("Solarpanel/001/bewegungsmeldung", "STURMSCHUTZ AKTIV!2");
-        //m1(2);
-        //delay(500);
-
-        // global Sturmschutz aktivieren
-        global_sturmschutz = 1;
+        m1(2);
+        delay(500);
         
       }
 
@@ -532,6 +534,30 @@ void mqtt_connected(){
 
 }
 
+/////////////////////////////////////////////////////////////////////////// mqtt Sturmschutz ausführen
+void mqtt_sturmschutz(){
+
+if (mqtt_sturmschutz_status == 1) {
+
+        client.publish("Solarpanel/001/bewegungsmeldung", "mqtt Sturmschutz aktiv");
+        m1(2);
+
+}
+
+}
+
+/////////////////////////////////////////////////////////////////////////// mqtt Panele senkrecht
+void mqtt_panele_senkrecht(){
+
+if (mqtt_panel_senkrecht == 1) {
+
+        client.publish("Solarpanel/001/bewegungsmeldung", "mqtt Panel senkrecht");
+        m1(1);
+
+}
+
+}
+
 /////////////////////////////////////////////////////////////////////////// LOOP
 void loop() {
 
@@ -558,7 +584,7 @@ ArduinoOTA.handle();
 
   //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ Sonne tracking
   // auf Nachstellung prüfen wenn 1 kein Tracking
-  if (nachtstellung_aktiv == 0) { 
+  if (nachtstellung_aktiv == 0 && mqtt_sturmschutz_status == 0 && mqtt_panel_senkrecht == 0) { 
       if (millis() - previousMillis_sonnentracking > interval_sonnentracking) {
           previousMillis_sonnentracking = millis(); 
           tracking();        
@@ -578,5 +604,17 @@ ArduinoOTA.handle();
       // Panel senkrecht schalten
       panel_senkrecht();
     }
+
+  //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ Auf mqtt Bewegung prüfen
+  if (millis() - previousMillis_mqttbewegung_pruefen > interval_mqttbewegung_pruefen) {
+      previousMillis_mqttbewegung_pruefen = millis(); 
+      // mqtt - Bewgungsabfragen
+      mqtt_sturmschutz();
+      
+        // Weitere mqtt Anweisungen fahren wenn Sturmschutz inaktiv.      
+        if (mqtt_sturmschutz_status == 0) {
+          mqtt_panele_senkrecht();
+        }
+    }    
 
 }
