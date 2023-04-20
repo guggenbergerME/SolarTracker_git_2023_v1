@@ -22,14 +22,19 @@ unsigned long interval_panelsenkrecht = 1000;
 unsigned long previousMillis_nachtstellung_pruefen = 0; // Sturmschutz Schalter prüfen
 unsigned long interval_nachtstellung_pruefen = 2500; 
 
+/////////////////////////////////////////////////////////////////////////// Systemvariablen
+int nachstellung_merker = 0; // Registriert die Nachstellung und wird morgens resetet.
+
 /////////////////////////////////////////////////////////////////////////// Pin Input
 int sturmschutzschalterpin =  13;
 int panelsenkrechtpin =  12;
 
 /////////////////////////////////////////////////////////////////////////// Schwellwerte
 int nachtstellung_aktiv = 0;
-int schwellwert_nachtstellung = 1500 ;
-int schwellwert_bewoelkt = 1 ;
+int schwellwert_nachtstellung = 1500 ;  // Ab diesem Wert wird auf Nachtstellung gefahren
+int schwellwert_bewoelkt = 1 ;          // Schwellwert für Bewölkung
+int schwellwert_morgen_aktivieren = 5;  // Schwellwert von Sensor oben_links der die ersten
+                                        // Sonnenstrahlen registriert
 
 /////////////////////////////////////////////////////////////////////////// Pin output zuweisen
 #define M1_re 2   // D2  - grau weiss - Pin 7
@@ -39,7 +44,6 @@ int schwellwert_bewoelkt = 1 ;
 
 /////////////////////////////////////////////////////////////////////////// mqtt
 char buffer1[10];
-
 
 /////////////////////////////////////////////////////////////////////////// ADC Pin und Variablen zuweisen
 /*
@@ -245,9 +249,20 @@ unten_links = analogRead(ldr_unten_links);
 unten_rechts = analogRead(ldr_unten_rechts);
 
 /*
-Serial.print("Wert LDR : ");
-Serial.println(oben_links);
+// Daten LDR auf mqtt ausgeben
+dtostrf(ldr_oben_links,2, 1, buffer1); 
+client.publish("Solarpanel/001/LDR_wert_oben_links", buffer1); 
+
+dtostrf(ldr_oben_rechts,2, 1, buffer1); 
+client.publish("Solarpanel/001/LDR_wert_oben_rechts", buffer1); 
+
+dtostrf(ldr_unten_links,2, 1, buffer1); 
+client.publish("Solarpanel/001/LDR_wert_unten_links", buffer1); 
+
+dtostrf(ldr_unten_rechts,2, 1, buffer1); 
+client.publish("Solarpanel/001/LDR_wert_unten_rechts", buffer1); 
 */
+/*
 Serial.print("Wert LDR oben links : ");
 Serial.println(oben_links);
 Serial.print("Wert LDR oben rechts : ");
@@ -256,11 +271,8 @@ Serial.print("Wert LDR unten links : ");
 Serial.println(unten_links);
 Serial.print("Wert LDR unten rechts: ");
 Serial.println(unten_rechts);
-
 Serial.println("------------------------------------------");
-
-
-
+*/
 
 }
 
@@ -273,10 +285,10 @@ int durchschnitt_nachtstellung = (oben_links + oben_rechts + unten_links + unten
 //Serial.print("Nachstellung Wert Quersumme : ");
 //Serial.println(durchschnitt_nachtstellung);
 
-// Werte senden
-          dtostrf(durchschnitt_nachtstellung,2, 1, buffer1); 
-  
-          client.publish("Solarpanel/001/sonnenQuersumme", buffer1); 
+// Sonnenstärke auslesen
+int mqtt_sonnenstaerke = 4095 - durchschnitt_nachtstellung;
+dtostrf(mqtt_sonnenstaerke,2, 1, buffer1); 
+client.publish("Solarpanel/001/sonnenQuersumme", buffer1); 
 
 
 if (durchschnitt_nachtstellung >= schwellwert_nachtstellung)
@@ -284,9 +296,11 @@ if (durchschnitt_nachtstellung >= schwellwert_nachtstellung)
 // Nachtstellung fahren
 
 nachtstellung_aktiv = 1;
-Serial.println("##########################   -- > Nachtstellung AKTIV");
-
+//Serial.println("##########################   -- > Nachtstellung AKTIV");
 client.publish("Solarpanel/001/meldung", "Nachtstellung aktiv"); 
+
+// Variabl setzen für merker
+nachstellung_merker = 1;
 
 // Platten stellen
 m1(2); // Oben
@@ -294,7 +308,7 @@ m2(1); //Links
 
 } else {
 
-nachtstellung_aktiv = 0;
+//nachtstellung_aktiv = 0;
 
 }
 
@@ -307,44 +321,45 @@ void tracking(){
   int durchschnitt_links = (oben_links + unten_links) ; //Durchschnitt von links 
   int durchschnitt_rechts = (oben_rechts + unten_rechts) ; //Durchschnitt von rechts 
 
-
-
-
 // Quersumme aller Sensoren berechnen
 int durchschnitt_bewoelkt = (oben_links + oben_rechts + unten_links + unten_rechts) / 4;
 Serial.print("Durchschnitt Bewölkt ");
 Serial.println(durchschnitt_bewoelkt);
 
-/*
-if (oben_links < 5 )
+//client.publish("Solarpanel/001/codemeldung", "Testnachricht Tracking");
+
+// Ausrichten des Panel am morgen
+if (oben_links < schwellwert_morgen_aktivieren && nachstellung_merker == 1)
 {
-m1(1); // Unten
-Serial.println("1");
+  // Sobald der Sensor oben_links unter den Schwellwert fällt, Panele in morgenstellung bringen
+  m2(1); //Links
+  m1(1); // Unten
+  client.publish("Solarpanel/001/codemeldung", "Morgensetup - Ausrichten");
+  // Warten das alle Positionen angefahren werden
+  delay(25000);
+  // nachstellung_merker zurücksetzten
+  nachstellung_merker = 0;
 } else
 {
-  Serial.println("2");
-
+ //client.publish("Solarpanel/001/codemeldung", "Morgensetup - NICHTS");
 }
 
-// TEST
-*/
-
-
+// Messen des Schwellwertes für Bewölkung
 if (durchschnitt_bewoelkt < schwellwert_bewoelkt) {
 
-        client.publish("Solarpanel/001/meldung", "Panele ausrichten"); 
         // Oben Unten ausrichten
         if (durchschnitt_oben < durchschnitt_unten)
         {
               // Nach unten ausrichten
-              Serial.println("BEWEGEN ---- UNTEN");
+              //Serial.println("BEWEGEN ---- UNTEN");
+              client.publish("Solarpanel/001/bewegungsmeldung", "Panel unten");
               m1(1); // Unten
               
         }
         else if (durchschnitt_unten < durchschnitt_oben)
         {
               // Nach oben ausrichten
-              Serial.println("BEWEGEN ---- OBEN");
+              client.publish("Solarpanel/001/bewegungsmeldung", "Panel oben");
               m1(2); // Oben
         }
         else 
@@ -360,20 +375,21 @@ if (durchschnitt_bewoelkt < schwellwert_bewoelkt) {
         if (durchschnitt_links > durchschnitt_rechts)
         {
               // Rechts
-              Serial.println("BEWEGEN ---- Rechts");
+              client.publish("Solarpanel/001/bewegungsmeldung", "Panel rechts");
               m2(2); // Rechts
 
         }
         else if (durchschnitt_rechts > durchschnitt_links)
         {
               // Links
-              Serial.println("BEWEGEN ---- Links");
+              client.publish("Solarpanel/001/bewegungsmeldung", "Panel links");
               m2(1); //Links
 
         }
         else 
         {
               //Serial.println("BEWEGEN RECHTS/UNTEN ---- NICHTS");
+              client.publish("Solarpanel/001/bewegungsmeldung", "Ausgerichtet!");
               m1(3);
               m2(3);
               delay(2000);
@@ -381,8 +397,9 @@ if (durchschnitt_bewoelkt < schwellwert_bewoelkt) {
 
 } else { // schwellwert prüfen
 
-Serial.println("##########################   -- > Keine Aktion - zuviel Wolken");
-             m1(3);
+              //Serial.println("##########################   -- > Keine Aktion - zuviel Wolken");
+              client.publish("Solarpanel/001/bewegungsmeldung", "Stop - zu viele Wolken");
+              m1(3);
               m2(3);
 
 }
