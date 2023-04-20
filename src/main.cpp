@@ -26,10 +26,11 @@ unsigned long previousMillis_mqttbewegung_pruefen = 0; // Sturmschutz Schalter p
 unsigned long interval_mqttbewegung_pruefen = 1000; 
 
 /////////////////////////////////////////////////////////////////////////// Systemvariablen
-int global_sturmschutz = 0; // Gloaber Sturmschutz zur abfrage
 int nachstellung_merker = 0; // Registriert die Nachstellung und wird morgens resetet.
 int mqtt_sturmschutz_status = 0; // Sturmschutz wird per mqtt aktiviert
 int mqtt_panel_senkrecht = 0; // Panel Senkrecht schalten
+int mqtt_panel_links = 0; // Panel links fahren
+int mqtt_panel_rechts = 0; // Panel rechts fahren
 
 /////////////////////////////////////////////////////////////////////////// Pin Input
 int sturmschutzschalterpin =  13;
@@ -81,6 +82,8 @@ void nachtstellung              ();
 void mqtt_connected             ();
 void mqtt_Sturmschutz           ();
 void mqtt_panele_senkrecht      ();
+void mqtt_panele_links          ();
+void mqtt_panele_rechts         ();
 
 
 /////////////////////////////////////////////////////////////////////////// Kartendaten 
@@ -184,6 +187,8 @@ void reconnect() {
       ////////////////////////////////////////////////////////////////////////// SUBSCRIBE Eintraege
       client.subscribe("Solarpanel/001/steuerung/sturmschutz");
       client.subscribe("Solarpanel/001/steuerung/senkrecht");
+      client.subscribe("Solarpanel/001/steuerung/links");
+      client.subscribe("Solarpanel/001/steuerung/rechts");
 
     } else {
       Serial.print("failed, rc=");
@@ -236,6 +241,44 @@ void callback(char* topic, byte* payload, unsigned int length) {
                 }
         }         
 
+  /////////////////////////////////////////////////////////////////////////// Panel links
+      if (strcmp(topic,"Solarpanel/001/steuerung/links")==0) {
+
+          // Sturmschutz aktivieren
+          if ((char)payload[0] == 'o' && (char)payload[1] == 'n') {  
+                client.publish("Solarpanel/001/codemeldung", "Panel Links AN");  
+                // mqtt_sturmschutz_status - per FHEM aktivieren
+                mqtt_panel_links = 1;
+
+                }
+          // Sturmschutz deaktivieren
+          if ((char)payload[0] == 'o' && (char)payload[1] == 'f' && (char)payload[2] == 'f') {  
+                client.publish("Solarpanel/001/codemeldung", "Panel Links AUS");
+                // mqtt_sturmschutz_status - per FHEM aktivieren
+                mqtt_panel_links = 0;
+
+                }
+        } 
+
+  /////////////////////////////////////////////////////////////////////////// Panel rechts
+      if (strcmp(topic,"Solarpanel/001/steuerung/rechts")==0) {
+
+          // Sturmschutz aktivieren
+          if ((char)payload[0] == 'o' && (char)payload[1] == 'n') {  
+                client.publish("Solarpanel/001/codemeldung", "Panel Rechts AN");  
+                // mqtt_sturmschutz_status - per FHEM aktivieren
+                mqtt_panel_rechts = 1;
+
+                }
+          // Sturmschutz deaktivieren
+          if ((char)payload[0] == 'o' && (char)payload[1] == 'f' && (char)payload[2] == 'f') {  
+                client.publish("Solarpanel/001/codemeldung", "Panel Rechts AUS");
+                // mqtt_sturmschutz_status - per FHEM aktivieren
+                mqtt_panel_rechts = 0;
+
+                }
+        } 
+
 
 }
 
@@ -282,9 +325,11 @@ unten_rechts = analogRead(ldr_unten_rechts);
 
 
 // Daten LDR auf mqtt ausgeben
+
+/*
 dtostrf(ldr_oben_links,2, 1, buffer1); 
 client.publish("Solarpanel/001/LDR_wert_oben_links", buffer1); 
-/*
+
 dtostrf(ldr_oben_rechts,2, 1, buffer1); 
 client.publish("Solarpanel/001/LDR_wert_oben_rechts", buffer1); 
 
@@ -558,6 +603,30 @@ if (mqtt_panel_senkrecht == 1) {
 
 }
 
+/////////////////////////////////////////////////////////////////////////// mqtt Panele links
+void mqtt_panele_links(){
+
+if (mqtt_panel_links == 1) {
+
+        client.publish("Solarpanel/001/bewegungsmeldung", "mqtt Panel links");
+        m2(1);
+
+}
+
+}
+
+/////////////////////////////////////////////////////////////////////////// mqtt Panele senkrecht
+void mqtt_panele_rechts(){
+
+if (mqtt_panel_rechts == 1) {
+
+        client.publish("Solarpanel/001/bewegungsmeldung", "mqtt Panel rechts");
+        m2(2);
+
+}
+
+}
+
 /////////////////////////////////////////////////////////////////////////// LOOP
 void loop() {
 
@@ -584,7 +653,7 @@ ArduinoOTA.handle();
 
   //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ Sonne tracking
   // auf Nachstellung prüfen wenn 1 kein Tracking
-  if (nachtstellung_aktiv == 0 && mqtt_sturmschutz_status == 0 && mqtt_panel_senkrecht == 0) { 
+  if (nachtstellung_aktiv == 0 && mqtt_sturmschutz_status == 0 && mqtt_panel_senkrecht == 0 && mqtt_panel_links == 0 && mqtt_panel_rechts == 0) { 
       if (millis() - previousMillis_sonnentracking > interval_sonnentracking) {
           previousMillis_sonnentracking = millis(); 
           tracking();        
@@ -614,6 +683,17 @@ ArduinoOTA.handle();
         // Weitere mqtt Anweisungen fahren wenn Sturmschutz inaktiv.      
         if (mqtt_sturmschutz_status == 0) {
           mqtt_panele_senkrecht();
+
+          // Fahrt rechts und links gegenseitig verriegeln
+          if (mqtt_panel_links == 0) {
+              mqtt_panele_rechts();
+          }
+
+          if (mqtt_panel_rechts == 0) {
+              mqtt_panele_links();
+          }
+
+
         }
     }    
 
