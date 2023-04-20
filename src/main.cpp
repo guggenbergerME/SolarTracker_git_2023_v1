@@ -23,7 +23,10 @@ unsigned long previousMillis_nachtstellung_pruefen = 0; // Sturmschutz Schalter 
 unsigned long interval_nachtstellung_pruefen = 2500; 
 
 /////////////////////////////////////////////////////////////////////////// Systemvariablen
+int global_sturmschutz = 0; // Gloaber Sturmschutz zur abfrage
 int nachstellung_merker = 0; // Registriert die Nachstellung und wird morgens resetet.
+int mqtt_sturmschutz_status = 0; // Sturmschutz wird per mqtt aktiviert
+int mqtt_panel_senkrecht = 0; // Panel Senkrecht schalten
 
 /////////////////////////////////////////////////////////////////////////// Pin Input
 int sturmschutzschalterpin =  13;
@@ -174,7 +177,8 @@ void reconnect() {
     if (client.connect(kartenID,"zugang1","43b4134735")) {
       //Serial.println("connected");
       ////////////////////////////////////////////////////////////////////////// SUBSCRIBE Eintraege
-      //client.subscribe("SolarTracker/001//IN");
+      //client.subscribe("Solarpanel/001/steuerung/sturmschutz");
+      //client.subscribe("Solarpanel/001/steuerung/senkrecht");
 
     } else {
       Serial.print("failed, rc=");
@@ -189,22 +193,45 @@ void reconnect() {
 /////////////////////////////////////////////////////////////////////////// MQTT callback
 void callback(char* topic, byte* payload, unsigned int length) {
 
-/*
-  /////////////////////////////////////////////////////////////////////////// Relais 0
-      if (strcmp(topic,"Vogelhaus/LED_Licht/IN")==0) {
+  /////////////////////////////////////////////////////////////////////////// Sturmschutz schalten
+      if (strcmp(topic,"Solarpanel/001/steuerung/sturmschutz")==0) {
 
-          // ON und OFF Funktion auslesen
+          // Sturmschutz aktivieren
           if ((char)payload[0] == 'o' && (char)payload[1] == 'n') {  
-                  Serial.println("LED Licht -> AN");
+                client.publish("Solarpanel/001/codemeldung", "Sturmschutz AKTIV");  
+                // mqtt_sturmschutz_status - per FHEM aktivieren
+                mqtt_sturmschutz_status = 1;
 
                 }
-
+          // Sturmschutz deaktivieren
           if ((char)payload[0] == 'o' && (char)payload[1] == 'f' && (char)payload[2] == 'f') {  
-                  Serial.println("LED Licht -> AUS");
+                client.publish("Solarpanel/001/codemeldung", "Sturmschutz AUS");
+                // mqtt_sturmschutz_status - per FHEM aktivieren
+                mqtt_sturmschutz_status = 0;
 
                 }
         } 
-*/
+
+  /////////////////////////////////////////////////////////////////////////// Panel senkrecht
+      if (strcmp(topic,"Solarpanel/001/steuerung/senkrecht")==0) {
+
+          // Sturmschutz aktivieren
+          if ((char)payload[0] == 'o' && (char)payload[1] == 'n') {  
+                client.publish("Solarpanel/001/codemeldung", "Panel Senkrecht AN");  
+                // mqtt_sturmschutz_status - per FHEM aktivieren
+                mqtt_panel_senkrecht = 1;
+
+                }
+          // Sturmschutz deaktivieren
+          if ((char)payload[0] == 'o' && (char)payload[1] == 'f' && (char)payload[2] == 'f') {  
+                client.publish("Solarpanel/001/codemeldung", "Panel Senkrecht AUS");
+                // mqtt_sturmschutz_status - per FHEM aktivieren
+                mqtt_panel_senkrecht = 0;
+
+                }
+        }         
+
+
 }
 
 /////////////////////////////////////////////////////////////////////////// SETUP
@@ -323,8 +350,8 @@ void tracking(){
 
 // Quersumme aller Sensoren berechnen
 int durchschnitt_bewoelkt = (oben_links + oben_rechts + unten_links + unten_rechts) / 4;
-Serial.print("Durchschnitt Bewölkt ");
-Serial.println(durchschnitt_bewoelkt);
+//Serial.print("Durchschnitt Bewölkt ");
+//Serial.println(durchschnitt_bewoelkt);
 
 //client.publish("Solarpanel/001/codemeldung", "Testnachricht Tracking");
 
@@ -411,13 +438,26 @@ if (durchschnitt_bewoelkt < schwellwert_bewoelkt) {
 void sturmschutzschalter() {
 
   // Schalter abfragen
-  	while( digitalRead(sturmschutzschalterpin) == 1 ) //while the button is pressed
+  	while( digitalRead(sturmschutzschalterpin) == 1 || mqtt_sturmschutz_status == 1) //while the button is pressed
       {
-        //blink
-        Serial.println("Alles unterbrechen wegen Windschutz!");
+        //Serial.println("Alles unterbrechen wegen Windschutz!");
+        client.publish("Solarpanel/001/bewegungsmeldung", "STURMSCHUTZ AKTIV!2");
         m1(2);
         delay(500);
+        // global Sturmschutz aktivieren
+        global_sturmschutz = 1;
+        client.publish("Solarpanel/001/codemeldung", "global 1");
+
       }
+
+
+  	while( digitalRead(sturmschutzschalterpin) == 0 || mqtt_sturmschutz_status == 0) //while the button is pressed
+      {
+        // global Sturmschutz aktivieren
+        global_sturmschutz = 0;
+        //client.publish("Solarpanel/001/codemeldung", "global 0");
+      }
+
 
 }
 
@@ -425,13 +465,13 @@ void sturmschutzschalter() {
 void panel_senkrecht() {
 
   // Schalter abfragen
-  	while( digitalRead(panelsenkrechtpin) == 1 ) //while the button is pressed
+  	while( digitalRead(panelsenkrechtpin) == 1 || mqtt_panel_senkrecht == 1 && mqtt_sturmschutz_status == 0) //while the button is pressed
       {
         //blink
-        Serial.println("Panele senkrecht stellen");
+        client.publish("Solarpanel/001/bewegungsmeldung", "Panele senkrecht");
         m1(1);
 
-        delay(500);
+        delay(1000);
       }
 
 }
@@ -532,23 +572,19 @@ ArduinoOTA.handle();
           previousMillis_sonnentracking = millis(); 
           tracking();        
         }
-  } else {};
+  }
 
-/*
   //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ Sturmschutzschalter abfragen
   if (millis() - previousMillis_sturmschutzschalter > interval_sturmschutzschalter) {
       previousMillis_sturmschutzschalter = millis(); 
       // Windstärke prüfen
-      //Serial.println("Sturmschutzschalter Prüfen");
      sturmschutzschalter();
     }    
 
   //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ Panele senkrecht
   if (millis() - previousMillis_panelsenkrecht > interval_panelsenkrecht) {
       previousMillis_panelsenkrecht = millis(); 
-      // Windstärke prüfen
-      //Serial.println("Panele senkrecht stellen");
+      // Panel senkrecht schalten
       panel_senkrecht();
     }
-*/
 }
