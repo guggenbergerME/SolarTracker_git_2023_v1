@@ -8,10 +8,10 @@ unsigned long previousMillis_mqttCHECK = 0; // Windstärke prüfen
 unsigned long interval_mqttCHECK = 450; 
 
 unsigned long previousMillis_LDR_auslesen = 0; // Sonnenstand prüfen
-unsigned long interval_LDR_auslesen = 800;
+unsigned long interval_LDR_auslesen = 25000;
 
 unsigned long previousMillis_sonnentracking = 0; // Sonnenstand prüfen
-unsigned long interval_sonnentracking = 800;
+unsigned long interval_sonnentracking = 900;
 
 unsigned long previousMillis_sturmschutzschalter = 0; // Sturmschutz Schalter prüfen
 unsigned long interval_sturmschutzschalter = 1000; 
@@ -43,8 +43,8 @@ int schwellwert_bewoelkt = 35 ;          // Schwellwert für Bewölkung
 int schwellwert_morgen_aktivieren = 150;  // Schwellwert von Sensor oben_links der die ersten
                                         // Sonnenstrahlen registriert
 
-int ausrichten_tolleranz_oben_unten = 50; // Ausgleichen von Schwankungen!
-int ausrichten_tolleranz_rechts_links = 50; // Ausgleichen von Schwankungen!
+int ausrichten_tolleranz_oben_unten = 150; // Ausgleichen von Schwankungen!
+int ausrichten_tolleranz_rechts_links = 100; // Ausgleichen von Schwankungen!
 
 /////////////////////////////////////////////////////////////////////////// Pin output zuweisen
 #define M1_re 2   // D2  - grau weiss - Pin 7
@@ -444,6 +444,8 @@ if (durchschnitt_bewoelkt < schwellwert_bewoelkt) {
                 Serial.println("BEWEGEN ---- unten");
                 //client.publish("Solarpanel/001/bewegungsmeldung", "Panel unten");
                 m1(1); // Unten
+                delay(300);
+                m1(3);
                 
           }
           else if (durchschnitt_unten < durchschnitt_oben)
@@ -452,6 +454,8 @@ if (durchschnitt_bewoelkt < schwellwert_bewoelkt) {
                 Serial.println("BEWEGEN ---- oben");
                 //client.publish("Solarpanel/001/bewegungsmeldung", "Panel oben");
                 m1(2); // Oben
+                delay(300);
+                m1(3);
           }
           else 
           {
@@ -478,6 +482,8 @@ if (durchschnitt_bewoelkt < schwellwert_bewoelkt) {
               Serial.println("BEWEGEN ---- rechts");
               //client.publish("Solarpanel/001/bewegungsmeldung", "Panel rechts");
               m2(2); // Rechts
+              delay(300);
+              m2(3);
 
         }
         else if (durchschnitt_rechts > durchschnitt_links)
@@ -486,6 +492,8 @@ if (durchschnitt_bewoelkt < schwellwert_bewoelkt) {
               Serial.println("BEWEGEN ---- links");
               //client.publish("Solarpanel/001/bewegungsmeldung", "Panel links");
               m2(1); //Links
+              delay(300);
+              m2(3);
 
         }
         else 
