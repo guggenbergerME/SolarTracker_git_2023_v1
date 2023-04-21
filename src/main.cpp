@@ -8,10 +8,10 @@ unsigned long previousMillis_mqttCHECK = 0; // Windstärke prüfen
 unsigned long interval_mqttCHECK = 450; 
 
 unsigned long previousMillis_LDR_auslesen = 0; // Sonnenstand prüfen
-unsigned long interval_LDR_auslesen = 1000;
+unsigned long interval_LDR_auslesen = 200;
 
 unsigned long previousMillis_sonnentracking = 0; // Sonnenstand prüfen
-unsigned long interval_sonnentracking = 100;
+unsigned long interval_sonnentracking = 800;
 
 unsigned long previousMillis_sturmschutzschalter = 0; // Sturmschutz Schalter prüfen
 unsigned long interval_sturmschutzschalter = 1000; 
@@ -39,9 +39,11 @@ int panelsenkrechtpin =  12;
 /////////////////////////////////////////////////////////////////////////// Schwellwerte
 int nachtstellung_aktiv = 0;
 int schwellwert_nachtstellung = 1500 ;  // Ab diesem Wert wird auf Nachtstellung gefahren
-int schwellwert_bewoelkt = 1 ;          // Schwellwert für Bewölkung
-int schwellwert_morgen_aktivieren = 30;  // Schwellwert von Sensor oben_links der die ersten
+int schwellwert_bewoelkt = 50 ;          // Schwellwert für Bewölkung
+int schwellwert_morgen_aktivieren = 150;  // Schwellwert von Sensor oben_links der die ersten
                                         // Sonnenstrahlen registriert
+int ausrichten_tolleranz_oben_unten = 80; // Ausgleichen von Schwankungen!
+int ausrichten_tolleranz_rechts_links = 40; // Ausgleichen von Schwankungen!
 
 /////////////////////////////////////////////////////////////////////////// Pin output zuweisen
 #define M1_re 2   // D2  - grau weiss - Pin 7
@@ -403,7 +405,10 @@ int durchschnitt_bewoelkt = (oben_links + oben_rechts + unten_links + unten_rech
 //Serial.print("Durchschnitt Bewölkt ");
 //Serial.println(durchschnitt_bewoelkt);
 
-//client.publish("Solarpanel/001/codemeldung", "Testnachricht Tracking");
+dtostrf(durchschnitt_bewoelkt,2, 1, buffer1); 
+client.publish("Solarpanel/001/codemeldung", buffer1);
+
+//client.publish("Solarpanel/001/codemeldung", durchschnitt_bewoelkt);
 
 // Ausrichten des Panel am morgen
 if (oben_links < schwellwert_morgen_aktivieren && nachstellung_merker == 1)
@@ -411,7 +416,7 @@ if (oben_links < schwellwert_morgen_aktivieren && nachstellung_merker == 1)
   // Sobald der Sensor oben_links unter den Schwellwert fällt, Panele in morgenstellung bringen
   m2(1); //Links
   m1(1); // Unten
-  client.publish("Solarpanel/001/codemeldung", "Morgensetup - Ausrichten");
+  //client.publish("Solarpanel/001/codemeldung", "Morgensetup - Ausrichten");
   // Warten das alle Positionen angefahren werden
   delay(25000);
   // nachstellung_merker zurücksetzten
@@ -424,29 +429,39 @@ if (oben_links < schwellwert_morgen_aktivieren && nachstellung_merker == 1)
 // Messen des Schwellwertes für Bewölkung
 if (durchschnitt_bewoelkt < schwellwert_bewoelkt) {
 
-        // Oben Unten ausrichten
-        if (durchschnitt_oben < durchschnitt_unten)
-        {
-              // Nach unten ausrichten
-              //Serial.println("BEWEGEN ---- UNTEN");
-              client.publish("Solarpanel/001/bewegungsmeldung", "Panel unten");
-              m1(1); // Unten
-              
-        }
-        else if (durchschnitt_unten < durchschnitt_oben)
-        {
-              // Nach oben ausrichten
-              client.publish("Solarpanel/001/bewegungsmeldung", "Panel oben");
-              m1(2); // Oben
-        }
-        else 
-        {
-              //Serial.println("BEWEGEN OBEN/UNTEN ---- NICHTS");
-              m1(3);
-              m2(3);
-              delay(800);
-        }
+    if ((durchschnitt_oben + durchschnitt_unten) > ausrichten_tolleranz_oben_unten) { // Durchschnitt
+
+          // Oben Unten ausrichten
+          if (durchschnitt_oben < durchschnitt_unten)
+          {
+                // Nach unten ausrichten
+                //Serial.println("BEWEGEN ---- UNTEN");
+                client.publish("Solarpanel/001/bewegungsmeldung", "Panel unten");
+                m1(1); // Unten
+                
+          }
+          else if (durchschnitt_unten < durchschnitt_oben)
+          {
+                // Nach oben ausrichten
+                client.publish("Solarpanel/001/bewegungsmeldung", "Panel oben");
+                m1(2); // Oben
+          }
+          else 
+          {
+                //Serial.println("BEWEGEN OBEN/UNTEN ---- NICHTS");
+                m1(3);
+                m2(3);
+                delay(2000);
+          }
         
+    } else {
+
+      client.publish("Solarpanel/001/bewegungsmeldung", "Durch oben/unten < Schwellwert");
+
+    }// Durchschnitt
+
+
+    if ((durchschnitt_links + durchschnitt_rechts) > ausrichten_tolleranz_rechts_links) { // Durchschnitt
 
         // Rechts / Links ausrichten
         if (durchschnitt_links > durchschnitt_rechts)
@@ -471,6 +486,12 @@ if (durchschnitt_bewoelkt < schwellwert_bewoelkt) {
               m2(3);
               delay(2000);
         }
+
+    } else {
+
+      client.publish("Solarpanel/001/bewegungsmeldung", "Durch rechts/links < Schwellwert");
+
+    } // Durchschnitt    
 
 } else { // schwellwert prüfen
 
@@ -587,6 +608,10 @@ if (mqtt_sturmschutz_status == 1) {
         client.publish("Solarpanel/001/bewegungsmeldung", "mqtt Sturmschutz aktiv");
         m1(2);
 
+} else {
+
+m1(3);
+
 }
 
 }
@@ -598,6 +623,10 @@ if (mqtt_panel_senkrecht == 1) {
 
         client.publish("Solarpanel/001/bewegungsmeldung", "mqtt Panel senkrecht");
         m1(1);
+
+} else {
+
+m1(3);
 
 }
 
@@ -611,7 +640,11 @@ if (mqtt_panel_links == 1) {
         client.publish("Solarpanel/001/bewegungsmeldung", "mqtt Panel links");
         m2(1);
 
-}
+} else {
+
+  m2(3);
+  
+  }
 
 }
 
@@ -622,6 +655,10 @@ if (mqtt_panel_rechts == 1) {
 
         client.publish("Solarpanel/001/bewegungsmeldung", "mqtt Panel rechts");
         m2(2);
+
+} else {
+
+  m2(3);
 
 }
 
