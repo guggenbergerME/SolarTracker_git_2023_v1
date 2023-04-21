@@ -8,7 +8,7 @@ unsigned long previousMillis_mqttCHECK = 0; // Windstärke prüfen
 unsigned long interval_mqttCHECK = 450; 
 
 unsigned long previousMillis_LDR_auslesen = 0; // Sonnenstand prüfen
-unsigned long interval_LDR_auslesen = 200;
+unsigned long interval_LDR_auslesen = 800;
 
 unsigned long previousMillis_sonnentracking = 0; // Sonnenstand prüfen
 unsigned long interval_sonnentracking = 800;
@@ -39,11 +39,12 @@ int panelsenkrechtpin =  12;
 /////////////////////////////////////////////////////////////////////////// Schwellwerte
 int nachtstellung_aktiv = 0;
 int schwellwert_nachtstellung = 1500 ;  // Ab diesem Wert wird auf Nachtstellung gefahren
-int schwellwert_bewoelkt = 50 ;          // Schwellwert für Bewölkung
+int schwellwert_bewoelkt = 35 ;          // Schwellwert für Bewölkung
 int schwellwert_morgen_aktivieren = 150;  // Schwellwert von Sensor oben_links der die ersten
                                         // Sonnenstrahlen registriert
-int ausrichten_tolleranz_oben_unten = 80; // Ausgleichen von Schwankungen!
-int ausrichten_tolleranz_rechts_links = 40; // Ausgleichen von Schwankungen!
+
+int ausrichten_tolleranz_oben_unten = 50; // Ausgleichen von Schwankungen!
+int ausrichten_tolleranz_rechts_links = 50; // Ausgleichen von Schwankungen!
 
 /////////////////////////////////////////////////////////////////////////// Pin output zuweisen
 #define M1_re 2   // D2  - grau weiss - Pin 7
@@ -357,6 +358,8 @@ Serial.println("------------------------------------------");
 
 /////////////////////////////////////////////////////////////////////////// Dunkelheit feststellen
 void nachtstellung(){
+//Serial.println("############################################## Nachtstellung");
+
   
 // Quersumme aller Sensoren berechnen
 int durchschnitt_nachtstellung = (oben_links + oben_rechts + unten_links + unten_rechts) / 4;
@@ -395,6 +398,7 @@ m2(1); //Links
 
 /////////////////////////////////////////////////////////////////////////// Sonne tracken
 void tracking(){
+  Serial.println("############################################## Tracking");
   int durchschnitt_oben = (oben_links + oben_rechts) ; //Durchschnitt von rauf 
   int durchschnitt_unten = (unten_links + unten_rechts) ; //Durchschnitt von runter 
   int durchschnitt_links = (oben_links + unten_links) ; //Durchschnitt von links 
@@ -402,11 +406,11 @@ void tracking(){
 
 // Quersumme aller Sensoren berechnen
 int durchschnitt_bewoelkt = (oben_links + oben_rechts + unten_links + unten_rechts) / 4;
-//Serial.print("Durchschnitt Bewölkt ");
-//Serial.println(durchschnitt_bewoelkt);
+Serial.print("Durchschnitt Bewölkt ");
+Serial.println(durchschnitt_bewoelkt);
 
-dtostrf(durchschnitt_bewoelkt,2, 1, buffer1); 
-client.publish("Solarpanel/001/codemeldung", buffer1);
+//dtostrf(durchschnitt_bewoelkt,2, 1, buffer1); 
+//client.publish("Solarpanel/001/codemeldung", buffer1);
 
 //client.publish("Solarpanel/001/codemeldung", durchschnitt_bewoelkt);
 
@@ -429,21 +433,24 @@ if (oben_links < schwellwert_morgen_aktivieren && nachstellung_merker == 1)
 // Messen des Schwellwertes für Bewölkung
 if (durchschnitt_bewoelkt < schwellwert_bewoelkt) {
 
+  Serial.println("################################### Sonne ausrecihenend Tracking");
+
     if ((durchschnitt_oben + durchschnitt_unten) > ausrichten_tolleranz_oben_unten) { // Durchschnitt
 
           // Oben Unten ausrichten
           if (durchschnitt_oben < durchschnitt_unten)
           {
                 // Nach unten ausrichten
-                //Serial.println("BEWEGEN ---- UNTEN");
-                client.publish("Solarpanel/001/bewegungsmeldung", "Panel unten");
+                Serial.println("BEWEGEN ---- unten");
+                //client.publish("Solarpanel/001/bewegungsmeldung", "Panel unten");
                 m1(1); // Unten
                 
           }
           else if (durchschnitt_unten < durchschnitt_oben)
           {
                 // Nach oben ausrichten
-                client.publish("Solarpanel/001/bewegungsmeldung", "Panel oben");
+                Serial.println("BEWEGEN ---- oben");
+                //client.publish("Solarpanel/001/bewegungsmeldung", "Panel oben");
                 m1(2); // Oben
           }
           else 
@@ -456,7 +463,8 @@ if (durchschnitt_bewoelkt < schwellwert_bewoelkt) {
         
     } else {
 
-      client.publish("Solarpanel/001/bewegungsmeldung", "Durch oben/unten < Schwellwert");
+    //  client.publish("Solarpanel/001/bewegungsmeldung", "Durch oben/unten < Schwellwert");
+    Serial.println("KEINE BEWEGUNG  oben/unten < Schwellwert");
 
     }// Durchschnitt
 
@@ -467,21 +475,24 @@ if (durchschnitt_bewoelkt < schwellwert_bewoelkt) {
         if (durchschnitt_links > durchschnitt_rechts)
         {
               // Rechts
-              client.publish("Solarpanel/001/bewegungsmeldung", "Panel rechts");
+              Serial.println("BEWEGEN ---- rechts");
+              //client.publish("Solarpanel/001/bewegungsmeldung", "Panel rechts");
               m2(2); // Rechts
 
         }
         else if (durchschnitt_rechts > durchschnitt_links)
         {
               // Links
-              client.publish("Solarpanel/001/bewegungsmeldung", "Panel links");
+              Serial.println("BEWEGEN ---- links");
+              //client.publish("Solarpanel/001/bewegungsmeldung", "Panel links");
               m2(1); //Links
 
         }
         else 
         {
               //Serial.println("BEWEGEN RECHTS/UNTEN ---- NICHTS");
-              client.publish("Solarpanel/001/bewegungsmeldung", "Ausgerichtet!");
+             // client.publish("Solarpanel/001/bewegungsmeldung", "Ausgerichtet!");
+             Serial.println("BEWEGEN ---- AUSGERICHTET");
               m1(3);
               m2(3);
               delay(2000);
@@ -489,7 +500,8 @@ if (durchschnitt_bewoelkt < schwellwert_bewoelkt) {
 
     } else {
 
-      client.publish("Solarpanel/001/bewegungsmeldung", "Durch rechts/links < Schwellwert");
+     // client.publish("Solarpanel/001/bewegungsmeldung", "Durch rechts/links < Schwellwert");
+     Serial.println("KEINE BEWEGUNG rechts/links < Schwellwert");
 
     } // Durchschnitt    
 
