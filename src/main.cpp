@@ -8,10 +8,10 @@ unsigned long previousMillis_mqttCHECK = 0; // Windstärke prüfen
 unsigned long interval_mqttCHECK = 450; 
 
 unsigned long previousMillis_LDR_auslesen = 0; // Sonnenstand prüfen
-unsigned long interval_LDR_auslesen = 15000;
+unsigned long interval_LDR_auslesen = 20000; //15000
 
 unsigned long previousMillis_sonnentracking = 0; // Sonnenstand prüfen
-unsigned long interval_sonnentracking = 5000;
+unsigned long interval_sonnentracking = 5000; //5000
 
 unsigned long previousMillis_sturmschutzschalter = 0; // Sturmschutz Schalter prüfen
 unsigned long interval_sturmschutzschalter = 1000; 
@@ -38,13 +38,13 @@ int panelsenkrechtpin =  12;
 
 /////////////////////////////////////////////////////////////////////////// Schwellwerte
 int nachtstellung_aktiv = 0;
-int schwellwert_nachtstellung = 1500 ;  // Ab diesem Wert wird auf Nachtstellung gefahren
-int schwellwert_bewoelkt = 25 ;          // Schwellwert für Bewölkung
+int schwellwert_nachtstellung = 1200 ;  // Ab diesem Wert wird auf Nachtstellung gefahren
+int schwellwert_bewoelkt = 30 ;          // Schwellwert für Bewölkung
 int schwellwert_morgen_aktivieren = 150;  // Schwellwert von Sensor oben_links der die ersten
                                         // Sonnenstrahlen registriert
 
-int ausrichten_tolleranz_oben_unten = 30; // Ausgleichen von Schwankungen!
-int ausrichten_tolleranz_rechts_links = 35; // Ausgleichen von Schwankungen!
+int ausrichten_tolleranz_oben_unten = 40; // Ausgleichen von Schwankungen!
+int ausrichten_tolleranz_rechts_links = 40; // Ausgleichen von Schwankungen!
 
 /////////////////////////////////////////////////////////////////////////// Pin output zuweisen
 #define M1_re 2   // D2  - grau weiss - Pin 7
@@ -61,13 +61,13 @@ Sensor-Leitung orange +5V
 Sensor-Leitung weis Masse
 */
 int oben_links;
-const int ldr_oben_links = 33; //ADC1_6   - LDR OL - Sensor-Leitung blau  (NW) OR
+const int ldr_oben_links = 32; //ADC1_6   - LDR OL - Sensor-Leitung blau  (NW) OR 33
 int oben_rechts;
-const int ldr_oben_rechts = 32; //ADC1_7  - LDR OR - Sensor-Leitung braun (NO) WS
+const int ldr_oben_rechts = 33; //ADC1_7  - LDR OR - Sensor-Leitung braun (NO)  32
 int unten_links;
-const int ldr_unten_links = 34; //ADC1_8  - LDR UL - Sensor-Leitung grün  (SW) BR
+const int ldr_unten_links = 35; //ADC1_8  - LDR UL - Sensor-Leitung grün  (SW) BR 34
 int unten_rechts;
-const int ldr_unten_rechts = 35; //ADC1_9 - LDR UR - Sensor-Leitung weiss (SO ) WS
+const int ldr_unten_rechts = 34; //ADC1_9 - LDR UR - Sensor-Leitung weiss (SO ) WS 35
 
 /////////////////////////////////////////////////////////////////////////// Funktionsprototypen
 void loop                       ();
@@ -342,7 +342,7 @@ client.publish("Solarpanel/001/LDR_wert_unten_links", buffer1);
 dtostrf(ldr_unten_rechts,2, 1, buffer1); 
 client.publish("Solarpanel/001/LDR_wert_unten_rechts", buffer1); 
 */
-/*
+
 Serial.print("Wert LDR oben links : ");
 Serial.println(oben_links);
 Serial.print("Wert LDR oben rechts : ");
@@ -352,7 +352,7 @@ Serial.println(unten_links);
 Serial.print("Wert LDR unten rechts: ");
 Serial.println(unten_rechts);
 Serial.println("------------------------------------------");
-*/
+
 
 }
 
