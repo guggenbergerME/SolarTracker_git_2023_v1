@@ -8,7 +8,7 @@ unsigned long previousMillis_mqttCHECK = 0; // Windstärke prüfen
 unsigned long interval_mqttCHECK = 450; 
 
 unsigned long previousMillis_LDR_auslesen = 0; // Sonnenstand prüfen
-unsigned long interval_LDR_auslesen = 20000; //15000
+unsigned long interval_LDR_auslesen = 25000; //15000
 
 unsigned long previousMillis_sonnentracking = 0; // Sonnenstand prüfen
 unsigned long interval_sonnentracking = 5000; //5000
@@ -39,12 +39,12 @@ int panelsenkrechtpin =  12;
 /////////////////////////////////////////////////////////////////////////// Schwellwerte
 int nachtstellung_aktiv = 0;
 int schwellwert_nachtstellung = 1200 ;  // Ab diesem Wert wird auf Nachtstellung gefahren
-int schwellwert_bewoelkt = 30 ;          // Schwellwert für Bewölkung
+int schwellwert_bewoelkt = 75 ;          // Schwellwert für Bewölkung
 int schwellwert_morgen_aktivieren = 150;  // Schwellwert von Sensor oben_links der die ersten
                                         // Sonnenstrahlen registriert
 
-int ausrichten_tolleranz_oben_unten = 40; // Ausgleichen von Schwankungen!
-int ausrichten_tolleranz_rechts_links = 40; // Ausgleichen von Schwankungen!
+int ausrichten_tolleranz_oben_unten = 65; // Ausgleichen von Schwankungen!
+int ausrichten_tolleranz_rechts_links = 75; // Ausgleichen von Schwankungen!
 
 /////////////////////////////////////////////////////////////////////////// Pin output zuweisen
 #define M1_re 2   // D2  - grau weiss - Pin 7
@@ -61,13 +61,13 @@ Sensor-Leitung orange +5V
 Sensor-Leitung weis Masse
 */
 int oben_links;
-const int ldr_oben_links = 32; //ADC1_6   - LDR OL - Sensor-Leitung blau  (NW) OR 33
+const int ldr_oben_links = 33; //ADC1_6   - LDR OL - Sensor-Leitung blau  (NW) OR 33
 int oben_rechts;
-const int ldr_oben_rechts = 33; //ADC1_7  - LDR OR - Sensor-Leitung braun (NO)  32
+const int ldr_oben_rechts = 32; //ADC1_7  - LDR OR - Sensor-Leitung braun (NO)  32
 int unten_links;
-const int ldr_unten_links = 35; //ADC1_8  - LDR UL - Sensor-Leitung grün  (SW) BR 34
+const int ldr_unten_links = 34; //ADC1_8  - LDR UL - Sensor-Leitung grün  (SW) BR 34
 int unten_rechts;
-const int ldr_unten_rechts = 34; //ADC1_9 - LDR UR - Sensor-Leitung weiss (SO ) WS 35
+const int ldr_unten_rechts = 35; //ADC1_9 - LDR UR - Sensor-Leitung weiss (SO ) WS 35
 
 /////////////////////////////////////////////////////////////////////////// Funktionsprototypen
 void loop                       ();
@@ -444,7 +444,7 @@ if (durchschnitt_bewoelkt < schwellwert_bewoelkt) {
                 Serial.println("BEWEGEN ---- unten");
                 //client.publish("Solarpanel/001/bewegungsmeldung", "Panel unten");
                 m1(1); // Unten
-                //delay(300);
+                //delay(900);
                 //m1(3);
                 
           }
@@ -454,7 +454,7 @@ if (durchschnitt_bewoelkt < schwellwert_bewoelkt) {
                 Serial.println("BEWEGEN ---- oben");
                 //client.publish("Solarpanel/001/bewegungsmeldung", "Panel oben");
                 m1(2); // Oben
-                //delay(300);
+                //delay(900);
                 //m1(3);
           }
           else 
@@ -462,7 +462,7 @@ if (durchschnitt_bewoelkt < schwellwert_bewoelkt) {
                 //Serial.println("BEWEGEN OBEN/UNTEN ---- NICHTS");
                 m1(3);
                 m2(3);
-                delay(5000);
+                //delay(3500);
           }
         
     } else {
@@ -482,7 +482,7 @@ if (durchschnitt_bewoelkt < schwellwert_bewoelkt) {
               Serial.println("BEWEGEN ---- rechts");
               //client.publish("Solarpanel/001/bewegungsmeldung", "Panel rechts");
               m2(2); // Rechts
-              //delay(300);
+              //delay(900);
               //m2(3);
 
         }
@@ -492,7 +492,7 @@ if (durchschnitt_bewoelkt < schwellwert_bewoelkt) {
               Serial.println("BEWEGEN ---- links");
               //client.publish("Solarpanel/001/bewegungsmeldung", "Panel links");
               m2(1); //Links
-              //delay(300);
+              //delay(900);
               //m2(3);
 
         }
@@ -503,7 +503,7 @@ if (durchschnitt_bewoelkt < schwellwert_bewoelkt) {
              Serial.println("BEWEGEN ---- AUSGERICHTET");
               m1(3);
               m2(3);
-              delay(5000);
+              //delay(1000);
         }
 
     } else {
