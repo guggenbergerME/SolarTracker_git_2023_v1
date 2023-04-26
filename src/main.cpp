@@ -11,7 +11,7 @@ unsigned long previousMillis_LDR_auslesen = 0; // Sonnenstand prüfen
 unsigned long interval_LDR_auslesen = 25000; //15000
 
 unsigned long previousMillis_sonnentracking = 0; // Sonnenstand prüfen
-unsigned long interval_sonnentracking = 5000; //5000
+unsigned long interval_sonnentracking = 3000; //5000
 
 unsigned long previousMillis_sturmschutzschalter = 0; // Sturmschutz Schalter prüfen
 unsigned long interval_sturmschutzschalter = 1000; 
