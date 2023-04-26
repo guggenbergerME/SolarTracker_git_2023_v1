@@ -39,7 +39,7 @@ int panelsenkrechtpin =  12;
 /////////////////////////////////////////////////////////////////////////// Schwellwerte
 int nachtstellung_aktiv = 0;
 int schwellwert_nachtstellung = 900 ;  // Ab diesem Wert wird auf Nachtstellung gefahren
-int schwellwert_bewoelkt = 130 ;          // Schwellwert für Bewölkung
+int schwellwert_bewoelkt = 65 ;          // Schwellwert für Bewölkung
 int schwellwert_morgen_aktivieren = 5;  // Schwellwert von Sensor oben_links der die ersten
                                         // Sonnenstrahlen registriert
 
