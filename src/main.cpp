@@ -432,6 +432,8 @@ int durchschnitt_bewoelkt = (oben_links + oben_rechts + unten_links + unten_rech
 Serial.print("Durchschnitt Bewölkt ");
 Serial.println(durchschnitt_bewoelkt);
 
+
+
 //dtostrf(durchschnitt_bewoelkt,2, 1, buffer1); 
 //client.publish("Solarpanel/001/codemeldung", buffer1);
 
@@ -448,6 +450,7 @@ if (oben_links < schwellwert_morgen_aktivieren && nachstellung_merker == 1)
   delay(25000);
   // nachstellung_merker zurücksetzten
   nachstellung_merker = 0;
+  client.publish("Solarpanel/001/meldung", "Morgenstellung");
 } else
 {
  //client.publish("Solarpanel/001/codemeldung", "Morgensetup - NICHTS");
@@ -459,6 +462,8 @@ if (durchschnitt_bewoelkt < schwellwert_bewoelkt) {
   //Serial.println("------------------------> Sonne ausreichend --- Panel justieren");
 
     if ((durchschnitt_oben + durchschnitt_unten) > ausrichten_tolleranz_oben_unten) { // Durchschnitt
+
+     client.publish("Solarpanel/001/meldung", "Regelung");
 
           // Oben Unten ausrichten
           if (durchschnitt_oben < durchschnitt_unten)
@@ -540,6 +545,7 @@ if (durchschnitt_bewoelkt < schwellwert_bewoelkt) {
 
               Serial.println("##########################   -- > Keine Aktion - zuviel Wolken");
               client.publish("Solarpanel/001/bewegungsmeldung", "Stop - zu viele Wolken");
+              client.publish("Solarpanel/001/meldung", "Zu viele Wolken!"); 
               m1(3);
               m2(3);
 
