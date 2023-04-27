@@ -5,10 +5,10 @@
 
 /////////////////////////////////////////////////////////////////////////// Schleifen verwalten
 unsigned long previousMillis_mqttCHECK = 0; // Windstärke prüfen
-unsigned long interval_mqttCHECK = 450; 
+unsigned long interval_mqttCHECK = 500; 
 
 unsigned long previousMillis_LDR_auslesen = 0; // Sonnenstand prüfen
-unsigned long interval_LDR_auslesen = 10000; //15000
+unsigned long interval_LDR_auslesen = 25000; //15000
 
 unsigned long previousMillis_sonnentracking = 0; // Sonnenstand prüfen
 unsigned long interval_sonnentracking = 5000; //5000
@@ -20,7 +20,7 @@ unsigned long previousMillis_panelsenkrecht = 0; // Sturmschutz Schalter prüfen
 unsigned long interval_panelsenkrecht = 1000; 
 
 unsigned long previousMillis_nachtstellung_pruefen = 0; // Sturmschutz Schalter prüfen
-unsigned long interval_nachtstellung_pruefen = 25000; 
+unsigned long interval_nachtstellung_pruefen = 60000; 
 
 unsigned long previousMillis_mqttbewegung_pruefen = 0; // Sturmschutz Schalter prüfen
 unsigned long interval_mqttbewegung_pruefen = 1000; 
@@ -37,12 +37,10 @@ int sturmschutzschalterpin =  13;
 int panelsenkrechtpin =  12;
 
 /////////////////////////////////////////////////////////////////////////// Schwellwerte
-int nachtstellung_aktiv = 0;
 int schwellwert_nachtstellung = 900 ;  // Ab diesem Wert wird auf Nachtstellung gefahren
 int schwellwert_bewoelkt = 65 ;          // Schwellwert für Bewölkung
-int schwellwert_morgen_aktivieren = 5;  // Schwellwert von Sensor oben_links der die ersten
+int schwellwert_morgen_aktivieren = 600;  // Schwellwert von Sensor oben_links der die ersten
                                         // Sonnenstrahlen registriert
-
 int ausrichten_tolleranz_oben_unten = 100; // Ausgleichen von Schwankungen!
 int ausrichten_tolleranz_rechts_links = 100; // Ausgleichen von Schwankungen!
 
@@ -386,7 +384,6 @@ if (durchschnitt_nachtstellung >= schwellwert_nachtstellung)
 {
 // Nachtstellung fahren
 Serial.println("Nachtstellung ---------------------------------- AKTIV");
-nachtstellung_aktiv = 1;
 //Serial.println("##########################   -- > Nachtstellung AKTIV");
 client.publish("Solarpanel/001/meldung", "Nachtstellung aktiv"); 
 
@@ -414,7 +411,7 @@ void tracking(){
   int durchschnitt_rechts = (oben_rechts + unten_rechts)/2; //Durchschnitt von rechts 
 
 
-
+/*
   dtostrf(durchschnitt_oben,2, 1, buffer1); 
 client.publish("Solarpanel/001/LDR_ds_oben", buffer1); 
 
@@ -427,12 +424,13 @@ client.publish("Solarpanel/001/LDR_ds_links", buffer1);
 dtostrf(durchschnitt_rechts,2, 1, buffer1); 
 client.publish("Solarpanel/001/LDR_ds_rechts", buffer1); 
 
-// Quersumme aller Sensoren berechnen
-int durchschnitt_bewoelkt = (oben_links + oben_rechts + unten_links + unten_rechts) / 4;
+
 Serial.print("Durchschnitt Bewölkt ");
 Serial.println(durchschnitt_bewoelkt);
+*/
 
-
+// Quersumme aller Sensoren berechnen
+int durchschnitt_bewoelkt = (oben_links + oben_rechts + unten_links + unten_rechts) / 4;
 
 //dtostrf(durchschnitt_bewoelkt,2, 1, buffer1); 
 //client.publish("Solarpanel/001/codemeldung", buffer1);
@@ -447,7 +445,7 @@ if (oben_links < schwellwert_morgen_aktivieren && nachstellung_merker == 1)
   m1(1); // Unten
   //client.publish("Solarpanel/001/codemeldung", "Morgensetup - Ausrichten");
   // Warten das alle Positionen angefahren werden
-  delay(25000);
+  delay(12000);
   // nachstellung_merker zurücksetzten
   nachstellung_merker = 0;
   client.publish("Solarpanel/001/meldung", "Morgenstellung");
@@ -747,7 +745,7 @@ ArduinoOTA.handle();
 
   //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ Sonne tracking
   // auf Nachstellung prüfen wenn 1 kein Tracking
-  if (nachtstellung_aktiv == 0 && mqtt_sturmschutz_status == 0 && mqtt_panel_senkrecht == 0 && mqtt_panel_links == 0 && mqtt_panel_rechts == 0) { 
+  if (nachstellung_merker == 0 && mqtt_sturmschutz_status == 0 && mqtt_panel_senkrecht == 0 && mqtt_panel_links == 0 && mqtt_panel_rechts == 0) { 
       if (millis() - previousMillis_sonnentracking > interval_sonnentracking) {
           previousMillis_sonnentracking = millis(); 
           tracking();        
