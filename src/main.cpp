@@ -8,7 +8,7 @@ unsigned long previousMillis_mqttCHECK = 0; // Windstärke prüfen
 unsigned long interval_mqttCHECK = 500; 
 
 unsigned long previousMillis_LDR_auslesen = 0; // Sonnenstand prüfen
-unsigned long interval_LDR_auslesen = 25000; //15000
+unsigned long interval_LDR_auslesen = 5000; //15000
 
 unsigned long previousMillis_sonnentracking = 0; // Sonnenstand prüfen
 unsigned long interval_sonnentracking = 5000; //5000
@@ -37,12 +37,12 @@ int sturmschutzschalterpin =  13;
 int panelsenkrechtpin =  12;
 
 /////////////////////////////////////////////////////////////////////////// Schwellwerte
-int schwellwert_nachtstellung = 900 ;  // Ab diesem Wert wird auf Nachtstellung gefahren
-int schwellwert_bewoelkt = 65 ;          // Schwellwert für Bewölkung
-int schwellwert_morgen_aktivieren = 600;  // Schwellwert von Sensor oben_links der die ersten
+int schwellwert_nachtstellung = 650 ;  // Ab diesem Wert wird auf Nachtstellung gefahren
+int schwellwert_bewoelkt = 80 ;          // Schwellwert für Bewölkung
+int schwellwert_morgen_aktivieren = 100;  // Schwellwert von Sensor oben_links der die ersten
                                         // Sonnenstrahlen registriert
-int ausrichten_tolleranz_oben_unten = 100; // Ausgleichen von Schwankungen!
-int ausrichten_tolleranz_rechts_links = 100; // Ausgleichen von Schwankungen!
+int ausrichten_tolleranz_oben_unten = 80; // Ausgleichen von Schwankungen!
+int ausrichten_tolleranz_rechts_links = 80; // Ausgleichen von Schwankungen!
 
 /////////////////////////////////////////////////////////////////////////// Pin output zuweisen
 #define M1_re 2   // D2  - grau weiss - Pin 7
@@ -411,7 +411,7 @@ void tracking(){
   int durchschnitt_rechts = (oben_rechts + unten_rechts)/2; //Durchschnitt von rechts 
 
 
-/*
+
   dtostrf(durchschnitt_oben,2, 1, buffer1); 
 client.publish("Solarpanel/001/LDR_ds_oben", buffer1); 
 
@@ -424,7 +424,7 @@ client.publish("Solarpanel/001/LDR_ds_links", buffer1);
 dtostrf(durchschnitt_rechts,2, 1, buffer1); 
 client.publish("Solarpanel/001/LDR_ds_rechts", buffer1); 
 
-
+/*
 Serial.print("Durchschnitt Bewölkt ");
 Serial.println(durchschnitt_bewoelkt);
 */
