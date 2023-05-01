@@ -8,7 +8,7 @@ unsigned long previousMillis_mqttCHECK = 0; // Windstärke prüfen
 unsigned long interval_mqttCHECK = 500; 
 
 unsigned long previousMillis_LDR_auslesen = 0; // Sonnenstand prüfen
-unsigned long interval_LDR_auslesen = 5000; //15000
+unsigned long interval_LDR_auslesen = 10000; //5000
 
 unsigned long previousMillis_sonnentracking = 0; // Sonnenstand prüfen
 unsigned long interval_sonnentracking = 5000; //5000
@@ -39,10 +39,10 @@ int panelsenkrechtpin =  12;
 /////////////////////////////////////////////////////////////////////////// Schwellwerte
 int schwellwert_nachtstellung = 650 ;  // Ab diesem Wert wird auf Nachtstellung gefahren
 int schwellwert_bewoelkt = 80 ;          // Schwellwert für Bewölkung
-int schwellwert_morgen_aktivieren = 100;  // Schwellwert von Sensor oben_links der die ersten
+int schwellwert_morgen_aktivieren = 30;  // Schwellwert von Sensor oben_links der die ersten
                                         // Sonnenstrahlen registriert
-int ausrichten_tolleranz_oben_unten = 80; // Ausgleichen von Schwankungen!
-int ausrichten_tolleranz_rechts_links = 80; // Ausgleichen von Schwankungen!
+int ausrichten_tolleranz_oben_unten = 100; // Ausgleichen von Schwankungen!
+int ausrichten_tolleranz_rechts_links = 75; // Ausgleichen von Schwankungen!
 
 /////////////////////////////////////////////////////////////////////////// Pin output zuweisen
 #define M1_re 2   // D2  - grau weiss - Pin 7
@@ -423,6 +423,9 @@ client.publish("Solarpanel/001/LDR_ds_links", buffer1);
 
 dtostrf(durchschnitt_rechts,2, 1, buffer1); 
 client.publish("Solarpanel/001/LDR_ds_rechts", buffer1); 
+/*
+dtostrf(nachstellung_merker,2, 1, buffer1); 
+client.publish("Solarpanel/001/codemeldung", buffer1);
 
 /*
 Serial.print("Durchschnitt Bewölkt ");
@@ -442,7 +445,7 @@ if (oben_links < schwellwert_morgen_aktivieren && nachstellung_merker == 1)
 {
   // Sobald der Sensor oben_links unter den Schwellwert fällt, Panele in morgenstellung bringen
   m2(1); //Links
-  m1(1); // Unten
+  m1(2); // Unten
   //client.publish("Solarpanel/001/codemeldung", "Morgensetup - Ausrichten");
   // Warten das alle Positionen angefahren werden
   delay(12000);
