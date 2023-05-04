@@ -11,7 +11,7 @@ unsigned long previousMillis_LDR_auslesen = 0; // Sonnenstand prüfen
 unsigned long interval_LDR_auslesen = 5000; //5000
 
 unsigned long previousMillis_sonnentracking = 0; // Sonnenstand prüfen
-unsigned long interval_sonnentracking = 5000; //5000
+unsigned long interval_sonnentracking = 10; //5000
 
 unsigned long previousMillis_sturmschutzschalter = 0; // Sturmschutz Schalter prüfen
 unsigned long interval_sturmschutzschalter = 1000; 
@@ -20,7 +20,7 @@ unsigned long previousMillis_panelsenkrecht = 0; // Sturmschutz Schalter prüfen
 unsigned long interval_panelsenkrecht = 1000; 
 
 unsigned long previousMillis_nachtstellung_pruefen = 0; // Sturmschutz Schalter prüfen
-unsigned long interval_nachtstellung_pruefen = 60000; 
+unsigned long interval_nachtstellung_pruefen = 5000; 
 
 unsigned long previousMillis_mqttbewegung_pruefen = 0; // Sturmschutz Schalter prüfen
 unsigned long interval_mqttbewegung_pruefen = 1000; 
@@ -37,12 +37,17 @@ int sturmschutzschalterpin =  13;
 int panelsenkrechtpin =  12;
 
 /////////////////////////////////////////////////////////////////////////// Schwellwerte
-int schwellwert_nachtstellung = 900 ;  // 600Ab diesem Wert wird auf Nachtstellung gefahren
+int schwellwert_nachtstellung = 1500 ;  // 600Ab diesem Wert wird auf Nachtstellung gefahren
 int schwellwert_bewoelkt = 100 ;          // Schwellwert für Bewölkung
 int schwellwert_morgen_aktivieren = 500;  // Schwellwert von Sensor oben_links der die ersten
                                         // Sonnenstrahlen registriert
-int ausrichten_tolleranz_oben_unten = 100; // Ausgleichen von Schwankungen!
-int ausrichten_tolleranz_rechts_links = 75; // Ausgleichen von Schwankungen!
+int ausrichten_tolleranz_oben_unten = 250; // Ausgleichen von Schwankungen!
+int ausrichten_tolleranz_rechts_links = 250; // Ausgleichen von Schwankungen!
+
+int durchschnitt_oben;
+int durchschnitt_unten;
+int durchschnitt_links;
+int durchschnitt_rechts;
 
 /////////////////////////////////////////////////////////////////////////// Pin output zuweisen
 #define M1_re 2   // D2  - grau weiss - Pin 7
@@ -328,14 +333,11 @@ unten_rechts = analogRead(ldr_unten_rechts);
 // Quersumme aller Sensoren berechnen
 int durchschnitt_bewoelkt = (oben_links + oben_rechts + unten_links + unten_rechts) / 4;
 
-dtostrf(durchschnitt_bewoelkt,2, 1, buffer1); 
-client.publish("Solarpanel/001/bewoelkung", buffer1);
-
-//client.publish("Solarpanel/001/codemeldung", durchschnitt_bewoelkt);
-
-
 // Daten LDR auf mqtt ausgeben
 
+
+dtostrf(durchschnitt_bewoelkt,2, 1, buffer1); 
+client.publish("Solarpanel/001/bewoelkung", buffer1);
 
 dtostrf(oben_links,2, 1, buffer1); 
 client.publish("Solarpanel/001/LDR_wert_oben_links", buffer1); 
@@ -350,6 +352,30 @@ dtostrf(unten_rechts,2, 1, buffer1);
 client.publish("Solarpanel/001/LDR_wert_unten_rechts", buffer1); 
 
 
+// Durchschnitt
+
+durchschnitt_oben = (oben_links + oben_rechts)/2; //Durchschnitt von rauf 
+durchschnitt_unten = (unten_links + unten_rechts)/2 ; //Durchschnitt von runter 
+durchschnitt_links = (oben_links + unten_links)/2; //Durchschnitt von links 
+durchschnitt_rechts = (oben_rechts + unten_rechts)/2; //Durchschnitt von rechts 
+
+  dtostrf(durchschnitt_oben,2, 1, buffer1); 
+client.publish("Solarpanel/001/LDR_ds_oben", buffer1); 
+
+dtostrf(durchschnitt_unten,2, 1, buffer1); 
+client.publish("Solarpanel/001/LDR_ds_unten", buffer1); 
+
+dtostrf(durchschnitt_links,2, 1, buffer1); 
+client.publish("Solarpanel/001/LDR_ds_links", buffer1); 
+
+dtostrf(durchschnitt_rechts,2, 1, buffer1); 
+client.publish("Solarpanel/001/LDR_ds_rechts", buffer1); 
+
+dtostrf(nachstellung_merker,2, 1, buffer1); 
+client.publish("Solarpanel/001/codemeldung", buffer1);
+
+/*
+
 Serial.print("Wert LDR oben links : ");
 Serial.println(oben_links);
 Serial.print("Wert LDR oben rechts : ");
@@ -359,7 +385,7 @@ Serial.println(unten_links);
 Serial.print("Wert LDR unten rechts: ");
 Serial.println(unten_rechts);
 Serial.println("------------------------------------------");
-
+*/
 
 }
 
@@ -375,7 +401,7 @@ int durchschnitt_nachtstellung = (oben_links + oben_rechts + unten_links + unten
 //Serial.println(durchschnitt_nachtstellung);
 
 // Sonnenstärke auslesen
-int mqtt_sonnenstaerke = 4095 - durchschnitt_nachtstellung;
+int mqtt_sonnenstaerke = durchschnitt_nachtstellung;
 dtostrf(mqtt_sonnenstaerke,2, 1, buffer1); 
 client.publish("Solarpanel/001/sonnenQuersumme", buffer1); 
 
@@ -404,14 +430,14 @@ m2(1); //Links
 
 /////////////////////////////////////////////////////////////////////////// Sonne tracken
 void tracking(){
-  Serial.println("FUNCTION ################################### Tracking");
-  int durchschnitt_oben = (oben_links + oben_rechts)/2; //Durchschnitt von rauf 
-  int durchschnitt_unten = (unten_links + unten_rechts)/2 ; //Durchschnitt von runter 
-  int durchschnitt_links = (oben_links + unten_links)/2; //Durchschnitt von links 
-  int durchschnitt_rechts = (oben_rechts + unten_rechts)/2; //Durchschnitt von rechts 
+ // Serial.println("FUNCTION ################################### Tracking");
+durchschnitt_oben = (oben_links + oben_rechts); //Durchschnitt von rauf 
+durchschnitt_unten = (unten_links + unten_rechts) ; //Durchschnitt von runter 
+durchschnitt_links = (oben_links + unten_links); //Durchschnitt von links 
+durchschnitt_rechts = (oben_rechts + unten_rechts); //Durchschnitt von rechts 
 
 
-
+/*
   dtostrf(durchschnitt_oben,2, 1, buffer1); 
 client.publish("Solarpanel/001/LDR_ds_oben", buffer1); 
 
@@ -423,7 +449,7 @@ client.publish("Solarpanel/001/LDR_ds_links", buffer1);
 
 dtostrf(durchschnitt_rechts,2, 1, buffer1); 
 client.publish("Solarpanel/001/LDR_ds_rechts", buffer1); 
-/*
+
 dtostrf(nachstellung_merker,2, 1, buffer1); 
 client.publish("Solarpanel/001/codemeldung", buffer1);
 
@@ -438,7 +464,7 @@ int durchschnitt_bewoelkt = (oben_links + oben_rechts + unten_links + unten_rech
 // Ausrichten des Panel am morgen
 if (oben_links < schwellwert_morgen_aktivieren && nachstellung_merker == 1)
 {
-   client.publish("Solarpanel/001/meldung", "Morgen ausrichten");
+  // client.publish("Solarpanel/001/meldung", "Morgen ausrichten");
   // Sobald der Sensor oben_links unter den Schwellwert fällt, Panele in morgenstellung bringen
   m1(1); // senkrecht
   m2(2); //rechts
@@ -458,18 +484,18 @@ if (durchschnitt_bewoelkt < schwellwert_bewoelkt) {
 
   //Serial.println("------------------------> Sonne ausreichend --- Panel justieren");
 
-    if ((durchschnitt_oben + durchschnitt_unten) > ausrichten_tolleranz_oben_unten) { // Durchschnitt
+    if (((durchschnitt_oben + durchschnitt_unten) / 2) > ausrichten_tolleranz_oben_unten) { // Durchschnitt
 
-     client.publish("Solarpanel/001/meldung", "Regelung");
+    // client.publish("Solarpanel/001/meldung", "Regelung");
 
           // Oben Unten ausrichten
           if (durchschnitt_oben < durchschnitt_unten)
           {
                 // Nach unten ausrichten
                 Serial.println("BEWEGEN ---- unten");
-                client.publish("Solarpanel/001/bewegungsmeldung", "Panel unten");
+               // client.publish("Solarpanel/001/bewegungsmeldung", "Panel unten");
                 m1(1); // Unten
-                //delay(900);
+                //delay(600);
                 //m1(3);
                 
           }
@@ -477,37 +503,37 @@ if (durchschnitt_bewoelkt < schwellwert_bewoelkt) {
           {
                 // Nach oben ausrichten
                 Serial.println("BEWEGEN ---- oben");
-                client.publish("Solarpanel/001/bewegungsmeldung", "Panel oben");
+              //  client.publish("Solarpanel/001/bewegungsmeldung", "Panel oben");
                 m1(2); // Oben
-                //delay(900);
+                //delay(600);
                 //m1(3);
           }
           else 
           {
                 //Serial.println("BEWEGEN OBEN/UNTEN ---- NICHTS");
                 m1(3);
-                m2(3);
+                
                 //delay(3500);
           }
         
     } else {
 
-    client.publish("Solarpanel/001/bewegungsmeldung", "Durch oben/unten < Schwellwert");
+    //client.publish("Solarpanel/001/bewegungsmeldung", "Durch oben/unten < Schwellwert");
     Serial.println("KEINE BEWEGUNG  oben/unten < Schwellwert");
 
     }// Durchschnitt
 
 
-    if ((durchschnitt_links + durchschnitt_rechts) > ausrichten_tolleranz_rechts_links) { // Durchschnitt
+    if (((durchschnitt_links + durchschnitt_rechts) / 2) > ausrichten_tolleranz_rechts_links) { // Durchschnitt
 
         // Rechts / Links ausrichten
         if (durchschnitt_links > durchschnitt_rechts)
         {
               // Rechts
               Serial.println("BEWEGEN ---- rechts");
-              client.publish("Solarpanel/001/bewegungsmeldung", "Panel rechts");
-              m2(1); // Rechts
-              //delay(900);
+            //  client.publish("Solarpanel/001/bewegungsmeldung", "Panel rechts");
+              m2(2); // Rechts
+              //delay(600);
               //m2(3);
 
         }
@@ -515,25 +541,25 @@ if (durchschnitt_bewoelkt < schwellwert_bewoelkt) {
         {
               // Links
               Serial.println("BEWEGEN ---- links");
-              client.publish("Solarpanel/001/bewegungsmeldung", "Panel links");
+            //  client.publish("Solarpanel/001/bewegungsmeldung", "Panel links");
               m2(1); //Links
-              //delay(900);
+              //delay(600);
               //m2(2);
 
         }
         else 
         {
               //Serial.println("BEWEGEN RECHTS/UNTEN ---- NICHTS");
-             client.publish("Solarpanel/001/bewegungsmeldung", "Ausgerichtet!");
+            // client.publish("Solarpanel/001/bewegungsmeldung", "Ausgerichtet!");
              Serial.println("BEWEGEN ---- AUSGERICHTET");
-              m1(3);
+            
               m2(3);
               //delay(1000);
         }
 
     } else {
 
-     client.publish("Solarpanel/001/bewegungsmeldung", "Durch rechts/links < Schwellwert");
+   //  client.publish("Solarpanel/001/bewegungsmeldung", "Durch rechts/links < Schwellwert");
      Serial.println("KEINE BEWEGUNG rechts/links < Schwellwert");
 
     } // Durchschnitt    
@@ -541,8 +567,8 @@ if (durchschnitt_bewoelkt < schwellwert_bewoelkt) {
 } else { // schwellwert prüfen
 
               Serial.println("##########################   -- > Keine Aktion - zuviel Wolken");
-              client.publish("Solarpanel/001/bewegungsmeldung", "Stop - zu viele Wolken");
-              client.publish("Solarpanel/001/meldung", "Zu viele Wolken!"); 
+             // client.publish("Solarpanel/001/bewegungsmeldung", "Stop - zu viele Wolken");
+            //  client.publish("Solarpanel/001/meldung", "Zu viele Wolken!"); 
               m1(3);
               m2(3);
 
