@@ -11,7 +11,7 @@ unsigned long previousMillis_LDR_auslesen = 0; // Sonnenstand prüfen
 unsigned long interval_LDR_auslesen = 5000; //5000
 
 unsigned long previousMillis_sonnentracking = 0; // Sonnenstand prüfen
-unsigned long interval_sonnentracking = 10; //5000
+unsigned long interval_sonnentracking = 10; //10
 
 unsigned long previousMillis_sturmschutzschalter = 0; // Sturmschutz Schalter prüfen
 unsigned long interval_sturmschutzschalter = 1000; 
@@ -20,13 +20,16 @@ unsigned long previousMillis_panelsenkrecht = 0; // Sturmschutz Schalter prüfen
 unsigned long interval_panelsenkrecht = 1000; 
 
 unsigned long previousMillis_nachtstellung_pruefen = 0; // Sturmschutz Schalter prüfen
-unsigned long interval_nachtstellung_pruefen = 5000; 
+unsigned long interval_nachtstellung_pruefen = 5400; 
 
 unsigned long previousMillis_mqttbewegung_pruefen = 0; // Sturmschutz Schalter prüfen
 unsigned long interval_mqttbewegung_pruefen = 1000; 
 
+unsigned long previousMillis_morgenstellung_pruefen = 0; // Sturmschutz Schalter prüfen
+unsigned long interval_morgenstellung_pruefen = 5500;
+
 /////////////////////////////////////////////////////////////////////////// Systemvariablen
-int nachstellung_merker = 0; // Registriert die Nachstellung und wird morgens resetet.
+int nachtstellung_merker = 0; // Registriert die Nachstellung und wird morgens resetet.
 int mqtt_sturmschutz_status = 0; // Sturmschutz wird per mqtt aktiviert
 int mqtt_panel_senkrecht = 0; // Panel Senkrecht schalten
 int mqtt_panel_links = 0; // Panel links fahren
@@ -39,7 +42,7 @@ int panelsenkrechtpin =  12;
 /////////////////////////////////////////////////////////////////////////// Schwellwerte
 int schwellwert_nachtstellung = 1500 ;  // 600Ab diesem Wert wird auf Nachtstellung gefahren
 int schwellwert_bewoelkt = 100 ;          // Schwellwert für Bewölkung
-int schwellwert_morgen_aktivieren = 500;  // Schwellwert von Sensor oben_links der die ersten
+int schwellwert_morgen_aktivieren = 650;  // Schwellwert von Sensor oben_links der die ersten
                                         // Sonnenstrahlen registriert
 int ausrichten_tolleranz_oben_unten = 250; // Ausgleichen von Schwankungen!
 int ausrichten_tolleranz_rechts_links = 250; // Ausgleichen von Schwankungen!
@@ -48,6 +51,7 @@ int durchschnitt_oben;
 int durchschnitt_unten;
 int durchschnitt_links;
 int durchschnitt_rechts;
+int durchschnitt_bewoelkt;
 
 /////////////////////////////////////////////////////////////////////////// Pin output zuweisen
 #define M1_re 2   // D2  - grau weiss - Pin 7
@@ -90,6 +94,7 @@ void mqtt_Sturmschutz           ();
 void mqtt_panele_senkrecht      ();
 void mqtt_panele_links          ();
 void mqtt_panele_rechts         ();
+void morgenstellung_pruefen     ();
 
 
 /////////////////////////////////////////////////////////////////////////// Kartendaten 
@@ -371,7 +376,7 @@ client.publish("Solarpanel/001/LDR_ds_links", buffer1);
 dtostrf(durchschnitt_rechts,2, 1, buffer1); 
 client.publish("Solarpanel/001/LDR_ds_rechts", buffer1); 
 
-dtostrf(nachstellung_merker,2, 1, buffer1); 
+dtostrf(nachtstellung_merker,2, 1, buffer1); 
 client.publish("Solarpanel/001/codemeldung", buffer1);
 
 /*
@@ -389,32 +394,65 @@ Serial.println("------------------------------------------");
 
 }
 
+/////////////////////////////////////////////////////////////////////////// Morgenstellung prüfen
+void morgenstellung_pruefen() {
+
+durchschnitt_oben = (oben_links + oben_rechts); //Durchschnitt von rauf 
+durchschnitt_unten = (unten_links + unten_rechts) ; //Durchschnitt von runter 
+durchschnitt_links = (oben_links + unten_links); //Durchschnitt von links 
+durchschnitt_rechts = (oben_rechts + unten_rechts); //Durchschnitt von rechts 
+
+// Quersumme aller Sensoren berechnen
+durchschnitt_bewoelkt = (oben_links + oben_rechts + unten_links + unten_rechts) / 4;
+
+// Ausrichten des Panel am morgen
+if ((oben_links < schwellwert_morgen_aktivieren) && nachtstellung_merker == 1)
+{
+  //client.publish("Solarpanel/001/meldung", "Morgen ausrichten");
+  // Sobald der Sensor oben_links unter den Schwellwert fällt, Panele in morgenstellung bringen
+  m1(1); // Oben
+  m2(1); //Links
+  //client.publish("Solarpanel/001/codemeldung", "Morgensetup - Ausrichten");
+  // Warten das alle Positionen angefahren werden
+  delay(35000);
+  // nachtstellung_merker zurücksetzten
+  nachtstellung_merker = 0;
+ 
+} else
+{
+ //client.publish("Solarpanel/001/codemeldung", "Morgensetup - NICHTS");
+ //nachtstellung_merker = 1;
+}
+
+}
+
+
 /////////////////////////////////////////////////////////////////////////// Dunkelheit feststellen
 void nachtstellung(){
 //Serial.println("FUNCTION ################################### Nachtstellung");
 
   
 // Quersumme aller Sensoren berechnen
-int durchschnitt_nachtstellung = (oben_links + oben_rechts + unten_links + unten_rechts) / 4;
+int durchschnitt_nachtstellung = (oben_links + oben_rechts + unten_links + unten_rechts)/4;
 
 //Serial.print("Nachstellung Wert Quersumme : ");
 //Serial.println(durchschnitt_nachtstellung);
 
 // Sonnenstärke auslesen
-int mqtt_sonnenstaerke = durchschnitt_nachtstellung;
-dtostrf(mqtt_sonnenstaerke,2, 1, buffer1); 
-client.publish("Solarpanel/001/sonnenQuersumme", buffer1); 
+//int mqtt_sonnenstaerke = durchschnitt_nachtstellung;
+//dtostrf(mqtt_sonnenstaerke,2, 1, buffer1); 
+//client.publish("Solarpanel/001/sonnenQuersumme", buffer1); 
 
 
-if (durchschnitt_nachtstellung >= schwellwert_nachtstellung)
+if (durchschnitt_nachtstellung > schwellwert_nachtstellung)
 {
 // Nachtstellung fahren
 Serial.println("Nachtstellung ---------------------------------- AKTIV");
 //Serial.println("##########################   -- > Nachtstellung AKTIV");
-client.publish("Solarpanel/001/meldung", "Nachtstellung aktiv"); 
+client.publish("Solarpanel/001/meldung", "Nachtstellung aktiv 001"); 
 
 // Variabl setzen für merker
-nachstellung_merker = 1;
+nachtstellung_merker = 1;
 
 // Platten stellen
 m1(2); // Oben
@@ -423,6 +461,7 @@ m2(1); //Links
 } else {
 
 //nachtstellung_aktiv = 0;
+client.publish("Solarpanel/001/meldung", "Nachtstellung Deaktiviert 001");
 
 }
 
@@ -435,49 +474,6 @@ durchschnitt_oben = (oben_links + oben_rechts); //Durchschnitt von rauf
 durchschnitt_unten = (unten_links + unten_rechts) ; //Durchschnitt von runter 
 durchschnitt_links = (oben_links + unten_links); //Durchschnitt von links 
 durchschnitt_rechts = (oben_rechts + unten_rechts); //Durchschnitt von rechts 
-
-
-/*
-  dtostrf(durchschnitt_oben,2, 1, buffer1); 
-client.publish("Solarpanel/001/LDR_ds_oben", buffer1); 
-
-dtostrf(durchschnitt_unten,2, 1, buffer1); 
-client.publish("Solarpanel/001/LDR_ds_unten", buffer1); 
-
-dtostrf(durchschnitt_links,2, 1, buffer1); 
-client.publish("Solarpanel/001/LDR_ds_links", buffer1); 
-
-dtostrf(durchschnitt_rechts,2, 1, buffer1); 
-client.publish("Solarpanel/001/LDR_ds_rechts", buffer1); 
-
-dtostrf(nachstellung_merker,2, 1, buffer1); 
-client.publish("Solarpanel/001/codemeldung", buffer1);
-
-/*
-Serial.print("Durchschnitt Bewölkt ");
-Serial.println(durchschnitt_bewoelkt);
-*/
-
-// Quersumme aller Sensoren berechnen
-int durchschnitt_bewoelkt = (oben_links + oben_rechts + unten_links + unten_rechts) / 4;
-
-// Ausrichten des Panel am morgen
-if (oben_links < schwellwert_morgen_aktivieren && nachstellung_merker == 1)
-{
-  // client.publish("Solarpanel/001/meldung", "Morgen ausrichten");
-  // Sobald der Sensor oben_links unter den Schwellwert fällt, Panele in morgenstellung bringen
-  m1(1); // senkrecht
-  m2(2); //rechts
-  //client.publish("Solarpanel/001/codemeldung", "Morgensetup - Ausrichten");
-  // Warten das alle Positionen angefahren werden
-  delay(12000);
-  // nachstellung_merker zurücksetzten
-  nachstellung_merker = 0;
- 
-} else
-{
- //client.publish("Solarpanel/001/codemeldung", "Morgensetup - NICHTS");
-}
 
 // Messen des Schwellwertes für Bewölkung
 if (durchschnitt_bewoelkt < schwellwert_bewoelkt) {
@@ -768,9 +764,15 @@ ArduinoOTA.handle();
       fotosensoren_auslesen();
     }
 
+  //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ Morgenstellung prüfen
+  if (millis() - previousMillis_morgenstellung_pruefen > interval_morgenstellung_pruefen) {
+      previousMillis_morgenstellung_pruefen= millis(); 
+      morgenstellung_pruefen();
+    }    
+
   //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ Sonne tracking
   // auf Nachstellung prüfen wenn 1 kein Tracking
-  if (nachstellung_merker == 0 && mqtt_sturmschutz_status == 0 && mqtt_panel_senkrecht == 0 && mqtt_panel_links == 0 && mqtt_panel_rechts == 0) { 
+  if (mqtt_sturmschutz_status == 0 && mqtt_panel_senkrecht == 0 && mqtt_panel_links == 0 && mqtt_panel_rechts == 0) { 
       if (millis() - previousMillis_sonnentracking > interval_sonnentracking) {
           previousMillis_sonnentracking = millis(); 
           tracking();        
