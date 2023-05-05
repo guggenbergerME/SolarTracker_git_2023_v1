@@ -20,7 +20,7 @@ unsigned long previousMillis_panelsenkrecht = 0; // Sturmschutz Schalter prüfen
 unsigned long interval_panelsenkrecht = 1000; 
 
 unsigned long previousMillis_nachtstellung_pruefen = 0; // Sturmschutz Schalter prüfen
-unsigned long interval_nachtstellung_pruefen = 5400; 
+unsigned long interval_nachtstellung_pruefen = 15000; 
 
 unsigned long previousMillis_mqttbewegung_pruefen = 0; // Sturmschutz Schalter prüfen
 unsigned long interval_mqttbewegung_pruefen = 1000; 
@@ -40,12 +40,12 @@ int sturmschutzschalterpin =  13;
 int panelsenkrechtpin =  12;
 
 /////////////////////////////////////////////////////////////////////////// Schwellwerte
-int schwellwert_nachtstellung = 1500 ;  // 600Ab diesem Wert wird auf Nachtstellung gefahren
-int schwellwert_bewoelkt = 100 ;          // Schwellwert für Bewölkung
-int schwellwert_morgen_aktivieren = 650;  // Schwellwert von Sensor oben_links der die ersten
+int schwellwert_nachtstellung = 600 ;  // 600Ab diesem Wert wird auf Nachtstellung gefahren
+int schwellwert_bewoelkt = 80 ;          // Schwellwert für Bewölkung
+int schwellwert_morgen_aktivieren = 600;  // Schwellwert von Sensor oben_links der die ersten
                                         // Sonnenstrahlen registriert
-int ausrichten_tolleranz_oben_unten = 250; // Ausgleichen von Schwankungen!
-int ausrichten_tolleranz_rechts_links = 250; // Ausgleichen von Schwankungen!
+int ausrichten_tolleranz_oben_unten = 180; // Ausgleichen von Schwankungen!
+int ausrichten_tolleranz_rechts_links = 180; // Ausgleichen von Schwankungen!
 
 int durchschnitt_oben;
 int durchschnitt_unten;
@@ -414,7 +414,7 @@ if ((oben_links < schwellwert_morgen_aktivieren) && nachtstellung_merker == 1)
   m2(1); //Links
   //client.publish("Solarpanel/001/codemeldung", "Morgensetup - Ausrichten");
   // Warten das alle Positionen angefahren werden
-  delay(35000);
+  delay(150000);
   // nachtstellung_merker zurücksetzten
   nachtstellung_merker = 0;
  
@@ -444,7 +444,7 @@ int durchschnitt_nachtstellung = (oben_links + oben_rechts + unten_links + unten
 //client.publish("Solarpanel/001/sonnenQuersumme", buffer1); 
 
 
-if (durchschnitt_nachtstellung > schwellwert_nachtstellung)
+if ((durchschnitt_nachtstellung > schwellwert_nachtstellung) && nachtstellung_merker == 0)
 {
 // Nachtstellung fahren
 Serial.println("Nachtstellung ---------------------------------- AKTIV");
@@ -457,6 +457,7 @@ nachtstellung_merker = 1;
 // Platten stellen
 m1(2); // Oben
 m2(1); //Links
+delay(25000);
 
 } else {
 
