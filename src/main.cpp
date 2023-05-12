@@ -8,7 +8,7 @@ unsigned long previousMillis_mqttCHECK = 0; // Windstärke prüfen
 unsigned long interval_mqttCHECK = 500; 
 
 unsigned long previousMillis_LDR_auslesen = 0; // Sonnenstand prüfen
-unsigned long interval_LDR_auslesen = 5000; //5000
+unsigned long interval_LDR_auslesen = 3500; //5000
 
 unsigned long previousMillis_sonnentracking = 0; // Sonnenstand prüfen
 unsigned long interval_sonnentracking = 10; //10
@@ -20,7 +20,7 @@ unsigned long previousMillis_panelsenkrecht = 0; // Sturmschutz Schalter prüfen
 unsigned long interval_panelsenkrecht = 1000; 
 
 unsigned long previousMillis_nachtstellung_pruefen = 0; // Sturmschutz Schalter prüfen
-unsigned long interval_nachtstellung_pruefen = 15000; 
+unsigned long interval_nachtstellung_pruefen = 150000; 
 
 unsigned long previousMillis_mqttbewegung_pruefen = 0; // Sturmschutz Schalter prüfen
 unsigned long interval_mqttbewegung_pruefen = 1000; 
@@ -40,12 +40,12 @@ int sturmschutzschalterpin =  13;
 int panelsenkrechtpin =  12;
 
 /////////////////////////////////////////////////////////////////////////// Schwellwerte
-int schwellwert_nachtstellung = 600 ;  // 600Ab diesem Wert wird auf Nachtstellung gefahren
-int schwellwert_bewoelkt = 80 ;          // Schwellwert für Bewölkung
+int schwellwert_nachtstellung = 1100 ;  // 600Ab diesem Wert wird auf Nachtstellung gefahren
+int schwellwert_bewoelkt = 135 ;          // Schwellwert für Bewölkung
 int schwellwert_morgen_aktivieren = 600;  // Schwellwert von Sensor oben_links der die ersten
                                         // Sonnenstrahlen registriert
-int ausrichten_tolleranz_oben_unten = 180; // Ausgleichen von Schwankungen!
-int ausrichten_tolleranz_rechts_links = 180; // Ausgleichen von Schwankungen!
+int ausrichten_tolleranz_oben_unten = 250; // Ausgleichen von Schwankungen!
+int ausrichten_tolleranz_rechts_links = 250; // Ausgleichen von Schwankungen!
 
 int durchschnitt_oben;
 int durchschnitt_unten;
@@ -457,7 +457,7 @@ nachtstellung_merker = 1;
 // Platten stellen
 m1(2); // Oben
 m2(1); //Links
-delay(25000);
+delay(75000);
 
 } else {
 
