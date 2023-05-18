@@ -8,7 +8,7 @@ unsigned long previousMillis_mqttCHECK = 0; // Windstärke prüfen
 unsigned long interval_mqttCHECK = 500; 
 
 unsigned long previousMillis_LDR_auslesen = 0; // Sonnenstand prüfen
-unsigned long interval_LDR_auslesen = 3500; //5000
+unsigned long interval_LDR_auslesen = 1500; //5000
 
 unsigned long previousMillis_sonnentracking = 0; // Sonnenstand prüfen
 unsigned long interval_sonnentracking = 10; //10
@@ -26,7 +26,7 @@ unsigned long previousMillis_mqttbewegung_pruefen = 0; // Sturmschutz Schalter p
 unsigned long interval_mqttbewegung_pruefen = 1000; 
 
 unsigned long previousMillis_morgenstellung_pruefen = 0; // Sturmschutz Schalter prüfen
-unsigned long interval_morgenstellung_pruefen = 5500;
+unsigned long interval_morgenstellung_pruefen = 15000;
 
 /////////////////////////////////////////////////////////////////////////// Systemvariablen
 int nachtstellung_merker = 0; // Registriert die Nachstellung und wird morgens resetet.
@@ -41,17 +41,40 @@ int panelsenkrechtpin =  12;
 
 /////////////////////////////////////////////////////////////////////////// Schwellwerte
 int schwellwert_nachtstellung = 1100 ;  // 600Ab diesem Wert wird auf Nachtstellung gefahren
-int schwellwert_bewoelkt = 135 ;          // Schwellwert für Bewölkung
+int schwellwert_bewoelkt = 170 ;          // Schwellwert für Bewölkung
 int schwellwert_morgen_aktivieren = 600;  // Schwellwert von Sensor oben_links der die ersten
                                         // Sonnenstrahlen registriert
-int ausrichten_tolleranz_oben_unten = 250; // Ausgleichen von Schwankungen!
-int ausrichten_tolleranz_rechts_links = 250; // Ausgleichen von Schwankungen!
+int ausrichten_tolleranz_oben_unten = 300; // Ausgleichen von Schwankungen!
+int ausrichten_tolleranz_rechts_links = 300; // Ausgleichen von Schwankungen!
 
 int durchschnitt_oben;
 int durchschnitt_unten;
 int durchschnitt_links;
 int durchschnitt_rechts;
 int durchschnitt_bewoelkt;
+
+/////////////////////////////////////////////////////////////////////////// Messwerte glätten
+int anzahl_messungen = 50;
+
+int read_oben_links;
+float oben_links;
+float aufsummiert_oben_links;
+int sensor_driften_oben_links = 0; // Genauigkeit anpassen
+
+int read_oben_rechts;
+float oben_rechts;
+float aufsummiert_oben_rechts;
+int sensor_driften_oben_rechts = 80; // Genauigkeit anpassen
+
+int read_unten_links;
+float unten_links;
+float aufsummiert_unten_links;
+int sensor_driften_unten_links = 0; // Genauigkeit anpassen
+
+int read_unten_rechts;
+float unten_rechts;
+float aufsummiert_unten_rechts;
+int sensor_driften_unten_rechts = 0; // Genauigkeit anpassen
 
 /////////////////////////////////////////////////////////////////////////// Pin output zuweisen
 #define M1_re 2   // D2  - grau weiss - Pin 7
@@ -67,13 +90,13 @@ char buffer1[10];
 Sensor-Leitung orange +5V
 Sensor-Leitung weis Masse
 */
-int oben_links;
+//int oben_links;
 const int ldr_oben_links = 33; //ADC1_6   - LDR OL - Sensor-Leitung blau  (NW) OR 33
-int oben_rechts;
+//int oben_rechts;
 const int ldr_oben_rechts = 32; //ADC1_7  - LDR OR - Sensor-Leitung braun (NO)  32
-int unten_links;
+//int unten_links;
 const int ldr_unten_links = 34; //ADC1_8  - LDR UL - Sensor-Leitung grün  (SW) BR 34
-int unten_rechts;
+//int unten_rechts;
 const int ldr_unten_rechts = 35; //ADC1_9 - LDR UR - Sensor-Leitung weiss (SO ) WS 35
 
 /////////////////////////////////////////////////////////////////////////// Funktionsprototypen
@@ -166,7 +189,7 @@ delay(100);
 
 WiFi.begin(WIFI_SSID, WIFI_PASS);
 Serial.println("Verbindung aufbauen ...");
-
+/*
 while (WiFi.status() != WL_CONNECTED) {
 
   if (WiFi.status() == WL_CONNECT_FAILED) {
@@ -180,6 +203,7 @@ while (WiFi.status() != WL_CONNECTED) {
     }
   delay(2000);
 }
+*/
     Serial.println("");
     Serial.println("Mit Wifi verbunden");
     Serial.println("IP Adresse: ");
@@ -326,13 +350,44 @@ pinMode(panelsenkrechtpin, INPUT);
 /////////////////////////////////////////////////////////////////////////// LDR auslesen
 void fotosensoren_auslesen() {
 // Analogwerte auslesen
-oben_links = analogRead(ldr_oben_links);  
+//oben_links = analogRead(ldr_oben_links);  
 
-oben_rechts = analogRead(ldr_oben_rechts);
+//oben_rechts = analogRead(ldr_oben_rechts);
 
-unten_links = analogRead(ldr_unten_links);
+//unten_links = analogRead(ldr_unten_links);
 
-unten_rechts = analogRead(ldr_unten_rechts);
+//unten_rechts = analogRead(ldr_unten_rechts);
+
+
+  aufsummiert_oben_links = 0;
+  for (int i = 0; i <= anzahl_messungen; i++) {
+     read_oben_links= analogRead(ldr_oben_links);
+     aufsummiert_oben_links = aufsummiert_oben_links + read_oben_links;
+  }
+  oben_links = (aufsummiert_oben_links / anzahl_messungen) + sensor_driften_oben_links;
+
+  aufsummiert_oben_rechts = 0;
+  for (int i = 0; i <= anzahl_messungen; i++) {
+     read_oben_rechts = analogRead(ldr_oben_rechts);
+     aufsummiert_oben_rechts = aufsummiert_oben_rechts + read_oben_rechts;
+  }
+  oben_rechts = (aufsummiert_oben_rechts / anzahl_messungen) + sensor_driften_oben_rechts ;
+
+  aufsummiert_unten_links = 0;
+  for (int i = 0; i <= anzahl_messungen; i++) {
+     read_unten_links= analogRead(ldr_unten_links);
+     aufsummiert_unten_links = aufsummiert_unten_links + read_unten_links;
+  }
+  unten_links = (aufsummiert_unten_links / anzahl_messungen) + sensor_driften_unten_links;
+
+  aufsummiert_unten_rechts = 0;
+  for (int i = 0; i <= anzahl_messungen; i++) {
+     read_unten_rechts = analogRead(ldr_unten_rechts);
+     aufsummiert_unten_rechts = aufsummiert_unten_rechts + read_unten_rechts;
+  }
+  unten_rechts = (aufsummiert_unten_rechts / anzahl_messungen) + sensor_driften_unten_rechts;
+
+
 
 
 // Quersumme aller Sensoren berechnen
@@ -363,6 +418,7 @@ durchschnitt_oben = (oben_links + oben_rechts)/2; //Durchschnitt von rauf
 durchschnitt_unten = (unten_links + unten_rechts)/2 ; //Durchschnitt von runter 
 durchschnitt_links = (oben_links + unten_links)/2; //Durchschnitt von links 
 durchschnitt_rechts = (oben_rechts + unten_rechts)/2; //Durchschnitt von rechts 
+
 
   dtostrf(durchschnitt_oben,2, 1, buffer1); 
 client.publish("Solarpanel/001/LDR_ds_oben", buffer1); 
@@ -426,7 +482,6 @@ if ((oben_links < schwellwert_morgen_aktivieren) && nachtstellung_merker == 1)
 
 }
 
-
 /////////////////////////////////////////////////////////////////////////// Dunkelheit feststellen
 void nachtstellung(){
 //Serial.println("FUNCTION ################################### Nachtstellung");
@@ -481,7 +536,7 @@ if (durchschnitt_bewoelkt < schwellwert_bewoelkt) {
 
   //Serial.println("------------------------> Sonne ausreichend --- Panel justieren");
 
-    if (((durchschnitt_oben + durchschnitt_unten) / 2) > ausrichten_tolleranz_oben_unten) { // Durchschnitt
+    if ((durchschnitt_oben + durchschnitt_unten) > ausrichten_tolleranz_oben_unten) { // Durchschnitt
 
     // client.publish("Solarpanel/001/meldung", "Regelung");
 
@@ -521,7 +576,7 @@ if (durchschnitt_bewoelkt < schwellwert_bewoelkt) {
     }// Durchschnitt
 
 
-    if (((durchschnitt_links + durchschnitt_rechts) / 2) > ausrichten_tolleranz_rechts_links) { // Durchschnitt
+    if ((durchschnitt_links + durchschnitt_rechts) > ausrichten_tolleranz_rechts_links) { // Durchschnitt
 
         // Rechts / Links ausrichten
         if (durchschnitt_links > durchschnitt_rechts)
@@ -529,7 +584,7 @@ if (durchschnitt_bewoelkt < schwellwert_bewoelkt) {
               // Rechts
               Serial.println("BEWEGEN ---- rechts");
             //  client.publish("Solarpanel/001/bewegungsmeldung", "Panel rechts");
-              m2(2); // Rechts
+              m2(1); // Rechts
               //delay(600);
               //m2(3);
 
@@ -539,7 +594,7 @@ if (durchschnitt_bewoelkt < schwellwert_bewoelkt) {
               // Links
               Serial.println("BEWEGEN ---- links");
             //  client.publish("Solarpanel/001/bewegungsmeldung", "Panel links");
-              m2(1); //Links
+              m2(2); //Links
               //delay(600);
               //m2(2);
 
