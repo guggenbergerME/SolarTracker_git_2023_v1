@@ -41,7 +41,7 @@ int panelsenkrechtpin =  12;
 
 /////////////////////////////////////////////////////////////////////////// Schwellwerte
 int schwellwert_nachtstellung = 1100 ;  // 600Ab diesem Wert wird auf Nachtstellung gefahren
-int schwellwert_bewoelkt = 170 ;          // Schwellwert für Bewölkung
+int schwellwert_bewoelkt = 100 ;          // Schwellwert für Bewölkung
 int schwellwert_morgen_aktivieren = 600;  // Schwellwert von Sensor oben_links der die ersten
                                         // Sonnenstrahlen registriert
 int ausrichten_tolleranz_oben_unten = 50; // Ausgleichen von Schwankungen!
@@ -54,7 +54,7 @@ int durchschnitt_rechts;
 int durchschnitt_bewoelkt;
 
 /////////////////////////////////////////////////////////////////////////// Messwerte glätten
-int anzahl_messungen = 100;
+int anzahl_messungen = 50;
 
 int read_oben_links;
 int oben_links;
@@ -395,10 +395,10 @@ void fotosensoren_auslesen() {
 
 
 // Quersumme aller Sensoren berechnen
-int durchschnitt_bewoelkt = (oben_links + oben_rechts + unten_links + unten_rechts) / 4;
+durchschnitt_bewoelkt = (oben_links + oben_rechts + unten_links + unten_rechts) / 4;
 
 // Daten LDR auf mqtt ausgeben
-/*
+
 
 dtostrf(durchschnitt_bewoelkt,2, 1, buffer1); 
 client.publish("Solarpanel/001/bewoelkung", buffer1);
@@ -414,7 +414,6 @@ client.publish("Solarpanel/001/LDR_wert_unten_links", buffer1);
 
 dtostrf(unten_rechts,2, 1, buffer1); 
 client.publish("Solarpanel/001/LDR_wert_unten_rechts", buffer1); 
-*/
 
 // Durchschnitt
 
@@ -441,7 +440,7 @@ client.publish("Solarpanel/001/LDR_ds_rechts", buffer1);
 dtostrf(nachtstellung_merker,2, 1, buffer1); 
 client.publish("Solarpanel/001/codemeldung", buffer1);
 */
-
+/*
 Serial.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>LINKS");
 Serial.print("Wert LDR oben links : ");
 Serial.println(oben_links);
@@ -462,7 +461,7 @@ int durchschnitt_rechts_links = (durchschnitt_links + durchschnitt_rechts) / 2;
 Serial.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> DURCHSCHNITT Rechts / Links");
 Serial.print("Rechts + Links / 2 = ");
 Serial.println(durchschnitt_rechts_links);
-
+*/
 Serial.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>OBEN");
 Serial.print("Wert LDR oben rechts : ");
 Serial.println(oben_rechts);
@@ -571,89 +570,59 @@ durchschnitt_unten = (unten_links + unten_rechts) ; //Durchschnitt von runter
 durchschnitt_links = (oben_links + unten_links); //Durchschnitt von links 
 durchschnitt_rechts = (oben_rechts + unten_rechts); //Durchschnitt von rechts 
 
+durchschnitt_bewoelkt = (oben_links + oben_rechts + unten_links + unten_rechts) / 4;
+
 // Messen des Schwellwertes für Bewölkung
 if (durchschnitt_bewoelkt < schwellwert_bewoelkt) {
 
-  //Serial.println("------------------------> Sonne ausreichend --- Panel justieren");
-
-   if (((durchschnitt_oben + durchschnitt_unten) / 2) > ausrichten_tolleranz_oben_unten) { // Durchschnitt
-  
           // Oben Unten ausrichten
           if (durchschnitt_oben < durchschnitt_unten)
           {
                 // Nach unten ausrichten
-              //  Serial.println("BEWEGEN ---- unten");
+              Serial.println("BEWEGEN ---- unten");
                 m1(1); // Unten
                 
-          }  else 
-          {
-                //Serial.println("BEWEGEN OBEN/UNTEN ---- NICHTS");
-                m1(3);
-
           }
-
-
-          if (durchschnitt_unten < durchschnitt_oben)
+          else if (durchschnitt_unten < durchschnitt_oben)
           {
                 // Nach oben ausrichten
-               //Serial.println("BEWEGEN ---- oben");
+              Serial.println("BEWEGEN ---- oben");
                 m1(2); // Oben
 
           }
           else 
           {
                 //Serial.println("BEWEGEN OBEN/UNTEN ---- NICHTS");
-                m1(3);
+                //m1(3);
 
           }
-        
-    
-    } else {
-
-   // Serial.println("KEINE BEWEGUNG  oben/unten < Schwellwert");
-
-    }// Durchschnitt
 
 
-    if ((durchschnitt_links + durchschnitt_rechts) > ausrichten_tolleranz_rechts_links) { // Durchschnitt
-
-            // Rechts / Links ausrichten
+        // Rechts / Links ausrichten
         if (durchschnitt_links > durchschnitt_rechts)
         {
-              // Rechts
-             // Serial.println("BEWEGEN ---- rechts");
-              m2(1); // Rechts
-
-        } else 
-        {
-              //Serial.println("BEWEGEN RECHTS/UNTEN ---- NICHTS");
-            
-              m2(3);
+              // Links
+             Serial.println("BEWEGEN ---- links");
+              m2(1); // Links
 
         }
-        
-        
-        if (durchschnitt_rechts > durchschnitt_links)
+        else if (durchschnitt_rechts > durchschnitt_links)
         {
-              // Links
-             // Serial.println("BEWEGEN ---- links");
-              m2(2); //Links
+              // Rechts
+             Serial.println("BEWEGEN ---- rechts");
+              m2(2); //rechts
 
 
         }
         else 
         {
               //Serial.println("BEWEGEN RECHTS/UNTEN ---- NICHTS");
+            // Serial.println("BEWEGEN ---- AUSGERICHTET");
             
-              //m2(3);
+              m2(3);
 
-        }
+        }          
 
-    } else {
-
-   //  Serial.println("KEINE BEWEGUNG rechts/links < Schwellwert");
-
-    } // Durchschnitt    
 
 } else { // schwellwert prüfen
 
