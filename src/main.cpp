@@ -41,11 +41,12 @@ int panelsenkrechtpin =  12;
 
 /////////////////////////////////////////////////////////////////////////// Schwellwerte
 int schwellwert_nachtstellung = 1100 ;  // 600Ab diesem Wert wird auf Nachtstellung gefahren
-int schwellwert_bewoelkt = 100 ;          // Schwellwert für Bewölkung
-int schwellwert_morgen_aktivieren = 600;  // Schwellwert von Sensor oben_links der die ersten
+int schwellwert_bewoelkt = 500 ;          // Schwellwert für Bewölkung
+int schwellwert_morgen_aktivieren = 800;  // Schwellwert von Sensor oben_links der die ersten
                                         // Sonnenstrahlen registriert
-int ausrichten_tolleranz_oben_unten = 50; // Ausgleichen von Schwankungen!
-int ausrichten_tolleranz_rechts_links = 50; // Ausgleichen von Schwankungen!
+int tolleranz_temp_errechnen;                                        
+int ausrichten_tolleranz_oben_unten = 15; // Ausgleichen von Schwankungen!
+int ausrichten_tolleranz_rechts_links = 35; // Ausgleichen von Schwankungen!
 
 int durchschnitt_oben;
 int durchschnitt_unten;
@@ -59,22 +60,22 @@ int anzahl_messungen = 50;
 int read_oben_links;
 int oben_links;
 int aufsummiert_oben_links;
-int sensor_driften_oben_links = 0; // Genauigkeit anpassen
+int sensor_driften_oben_links = 130; // Genauigkeit anpassen
 
 int read_oben_rechts;
 int oben_rechts;
 int aufsummiert_oben_rechts;
-int sensor_driften_oben_rechts = -75; // Genauigkeit anpassen
+int sensor_driften_oben_rechts = 0; // Genauigkeit anpassen -78
 
 int read_unten_links;
 int unten_links;
 int aufsummiert_unten_links;
-int sensor_driften_unten_links = -100; // Genauigkeit anpassen
+int sensor_driften_unten_links = 90; // Genauigkeit anpassen -100
 
 int read_unten_rechts;
 int unten_rechts;
 int aufsummiert_unten_rechts;
-int sensor_driften_unten_rechts = -90; // Genauigkeit anpassen
+int sensor_driften_unten_rechts = 0; // Genauigkeit anpassen -90
 
 /////////////////////////////////////////////////////////////////////////// Pin output zuweisen
 #define M1_re 2   // D2  - grau weiss - Pin 7
@@ -424,7 +425,7 @@ durchschnitt_unten = (unten_links + unten_rechts)/2 ; //Durchschnitt von runter
 durchschnitt_links = (oben_links + unten_links)/2; //Durchschnitt von links 
 durchschnitt_rechts = (oben_rechts + unten_rechts)/2; //Durchschnitt von rechts 
 
-/*
+
   dtostrf(durchschnitt_oben,2, 1, buffer1); 
 client.publish("Solarpanel/001/LDR_ds_oben", buffer1); 
 
@@ -439,7 +440,7 @@ client.publish("Solarpanel/001/LDR_ds_rechts", buffer1);
 
 dtostrf(nachtstellung_merker,2, 1, buffer1); 
 client.publish("Solarpanel/001/codemeldung", buffer1);
-*/
+
 /*
 Serial.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>LINKS");
 Serial.print("Wert LDR oben links : ");
@@ -565,16 +566,100 @@ client.publish("Solarpanel/001/meldung", "Nachtstellung Deaktiviert 001");
 /////////////////////////////////////////////////////////////////////////// Sonne tracken
 void tracking(){
  // Serial.println("FUNCTION ################################### Tracking");
-durchschnitt_oben = (oben_links + oben_rechts); //Durchschnitt von rauf 
-durchschnitt_unten = (unten_links + unten_rechts) ; //Durchschnitt von runter 
-durchschnitt_links = (oben_links + unten_links); //Durchschnitt von links 
-durchschnitt_rechts = (oben_rechts + unten_rechts); //Durchschnitt von rechts 
+durchschnitt_oben = (oben_links + oben_rechts)/2; //Durchschnitt von rauf 
+durchschnitt_unten = (unten_links + unten_rechts)/2 ; //Durchschnitt von runter 
+durchschnitt_links = (oben_links + unten_links)/2; //Durchschnitt von links 
+durchschnitt_rechts = (oben_rechts + unten_rechts)/2; //Durchschnitt von rechts 
 
 durchschnitt_bewoelkt = (oben_links + oben_rechts + unten_links + unten_rechts) / 4;
 
 // Messen des Schwellwertes für Bewölkung
 if (durchschnitt_bewoelkt < schwellwert_bewoelkt) {
 
+
+
+// **************************************************************  DREHEN
+  if (durchschnitt_rechts == durchschnitt_links) {
+    //Serial.println("BEWEGEN OBEN/UNTEN ---- NICHTS");
+    m2(3);
+  }
+
+  if (durchschnitt_rechts > durchschnitt_links){
+
+  //if (durchschnitt_rechts > durchschnitt_links && (durchschnitt_rechts-durchschnitt_links) > ausrichten_tolleranz_rechts_links) {
+
+      tolleranz_temp_errechnen = durchschnitt_rechts - durchschnitt_links;
+
+        if (tolleranz_temp_errechnen > ausrichten_tolleranz_rechts_links) {
+        //unten
+        m2(2); // Unten
+        } else {
+          // stop
+          m2(3);
+        }
+  }
+  
+  //if (durchschnitt_links > durchschnitt_rechts && (durchschnitt_links-durchschnitt_rechts) > ausrichten_tolleranz_rechts_links) {
+  if (durchschnitt_links > durchschnitt_rechts){
+
+      tolleranz_temp_errechnen = durchschnitt_links - durchschnitt_rechts;
+
+        if (tolleranz_temp_errechnen > ausrichten_tolleranz_rechts_links) {
+        //unten
+        m2(1); // Unten
+        } else {
+          // stop
+          m2(3);
+        }
+
+  }
+
+
+// **************************************************************  NEIGEN
+  if (durchschnitt_oben == durchschnitt_unten) {
+    //stop
+    m1(3);
+  }
+
+
+  if (durchschnitt_oben > durchschnitt_unten) {
+  //if ((durchschnitt_oben > durchschnitt_unten) && (durchschnitt_oben - durchschnitt_unten) > ausrichten_tolleranz_oben_unten) {  
+  //if (durchschnitt_oben > durchschnitt_unten && (durchschnitt_oben-durchschnitt_unten) > ausrichten_tolleranz_oben_unten) {
+      // Tolleranz prüfen
+      tolleranz_temp_errechnen = durchschnitt_oben - durchschnitt_unten;
+
+        if (tolleranz_temp_errechnen > ausrichten_tolleranz_oben_unten) {
+        //unten
+        m1(2); // Unten
+        } else {
+          // stop
+          m1(3);
+        }
+
+  }
+
+
+  if (durchschnitt_unten > durchschnitt_oben) {
+  //if ((durchschnitt_unten > durchschnitt_oben) && (durchschnitt_unten - durchschnitt_oben) > ausrichten_tolleranz_oben_unten) {
+  //if (durchschnitt_unten > durchschnitt_oben && (durchschnitt_unten-durchschnitt_oben) > ausrichten_tolleranz_oben_unten) {
+      
+      // Tolleranz prüfen
+      tolleranz_temp_errechnen = durchschnitt_unten - durchschnitt_oben;
+
+        if (tolleranz_temp_errechnen > ausrichten_tolleranz_oben_unten) {
+        //unten
+        m1(1); // Unten
+        } else {
+          // stop
+          m1(3);
+        }
+
+  }
+
+ 
+
+
+/*
           // Oben Unten ausrichten
           if (durchschnitt_oben < durchschnitt_unten)
           {
@@ -622,7 +707,7 @@ if (durchschnitt_bewoelkt < schwellwert_bewoelkt) {
               m2(3);
 
         }          
-
+*/
 
 } else { // schwellwert prüfen
 
