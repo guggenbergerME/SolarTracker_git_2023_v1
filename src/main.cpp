@@ -8,10 +8,10 @@ unsigned long previousMillis_mqttCHECK = 0; // Windstärke prüfen
 unsigned long interval_mqttCHECK = 500; 
 
 unsigned long previousMillis_LDR_auslesen = 0; // Sonnenstand prüfen
-unsigned long interval_LDR_auslesen = 5000; //5000
+unsigned long interval_LDR_auslesen = 1000; //5000
 
 unsigned long previousMillis_sonnentracking = 0; // Sonnenstand prüfen
-unsigned long interval_sonnentracking = 10; //10
+unsigned long interval_sonnentracking = 20; //10
 
 unsigned long previousMillis_sturmschutzschalter = 0; // Sturmschutz Schalter prüfen
 unsigned long interval_sturmschutzschalter = 1000; 
@@ -20,13 +20,16 @@ unsigned long previousMillis_panelsenkrecht = 0; // Sturmschutz Schalter prüfen
 unsigned long interval_panelsenkrecht = 1000; 
 
 unsigned long previousMillis_nachtstellung_pruefen = 0; // Sturmschutz Schalter prüfen
-unsigned long interval_nachtstellung_pruefen = 150000; 
+unsigned long interval_nachtstellung_pruefen = 100000; 
 
 unsigned long previousMillis_mqttbewegung_pruefen = 0; // Sturmschutz Schalter prüfen
 unsigned long interval_mqttbewegung_pruefen = 1000; 
 
 unsigned long previousMillis_morgenstellung_pruefen = 0; // Sturmschutz Schalter prüfen
-unsigned long interval_morgenstellung_pruefen = 15000;
+unsigned long interval_morgenstellung_pruefen = 100000;
+
+unsigned long previousMillis_ldr_werte_mqtt_senden = 0; // Sturmschutz Schalter prüfen
+unsigned long interval_ldr_werte_mqtt_senden = 20000;
 
 /////////////////////////////////////////////////////////////////////////// Systemvariablen
 int nachtstellung_merker = 0; // Registriert die Nachstellung und wird morgens resetet.
@@ -40,13 +43,13 @@ int sturmschutzschalterpin =  13;
 int panelsenkrechtpin =  12;
 
 /////////////////////////////////////////////////////////////////////////// Schwellwerte
-int schwellwert_nachtstellung = 1100 ;  // 600Ab diesem Wert wird auf Nachtstellung gefahren
+int schwellwert_nachtstellung = 1300 ;  // 600Ab diesem Wert wird auf Nachtstellung gefahren
 int schwellwert_bewoelkt = 500 ;          // Schwellwert für Bewölkung
-int schwellwert_morgen_aktivieren = 800;  // Schwellwert von Sensor oben_links der die ersten
+int schwellwert_morgen_aktivieren = 600;  // Schwellwert von Sensor oben_links der die ersten
                                         // Sonnenstrahlen registriert
 int tolleranz_temp_errechnen;                                        
-int ausrichten_tolleranz_oben_unten = 15; // Ausgleichen von Schwankungen!
-int ausrichten_tolleranz_rechts_links = 35; // Ausgleichen von Schwankungen!
+int ausrichten_tolleranz_oben_unten = 45; // Ausgleichen von Schwankungen!
+int ausrichten_tolleranz_rechts_links = 60; // Ausgleichen von Schwankungen!
 
 int durchschnitt_oben;
 int durchschnitt_unten;
@@ -118,6 +121,7 @@ void mqtt_Sturmschutz           ();
 void mqtt_panele_senkrecht      ();
 void mqtt_panele_links          ();
 void mqtt_panele_rechts         ();
+void mqtt_ldr_werte_senden      ();
 void morgenstellung_pruefen     ();
 
 
@@ -399,7 +403,7 @@ void fotosensoren_auslesen() {
 durchschnitt_bewoelkt = (oben_links + oben_rechts + unten_links + unten_rechts) / 4;
 
 // Daten LDR auf mqtt ausgeben
-
+/*
 
 dtostrf(durchschnitt_bewoelkt,2, 1, buffer1); 
 client.publish("Solarpanel/001/bewoelkung", buffer1);
@@ -415,7 +419,7 @@ client.publish("Solarpanel/001/LDR_wert_unten_links", buffer1);
 
 dtostrf(unten_rechts,2, 1, buffer1); 
 client.publish("Solarpanel/001/LDR_wert_unten_rechts", buffer1); 
-
+*/
 // Durchschnitt
 
 durchschnitt_oben = (oben_links + oben_rechts)/2; //Durchschnitt von rauf 
@@ -425,7 +429,7 @@ durchschnitt_unten = (unten_links + unten_rechts)/2 ; //Durchschnitt von runter
 durchschnitt_links = (oben_links + unten_links)/2; //Durchschnitt von links 
 durchschnitt_rechts = (oben_rechts + unten_rechts)/2; //Durchschnitt von rechts 
 
-
+/*
   dtostrf(durchschnitt_oben,2, 1, buffer1); 
 client.publish("Solarpanel/001/LDR_ds_oben", buffer1); 
 
@@ -440,7 +444,7 @@ client.publish("Solarpanel/001/LDR_ds_rechts", buffer1);
 
 dtostrf(nachtstellung_merker,2, 1, buffer1); 
 client.publish("Solarpanel/001/codemeldung", buffer1);
-
+*/
 /*
 Serial.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>LINKS");
 Serial.print("Wert LDR oben links : ");
@@ -834,6 +838,43 @@ m1(3);
 
 }
 
+/////////////////////////////////////////////////////////////////////////// LDR Werte senden
+void mqtt_ldr_werte_senden() {
+
+dtostrf(durchschnitt_bewoelkt,2, 1, buffer1); 
+client.publish("Solarpanel/001/bewoelkung", buffer1);
+
+dtostrf(oben_links,2, 1, buffer1); 
+client.publish("Solarpanel/001/LDR_wert_oben_links", buffer1); 
+
+dtostrf(oben_rechts,2, 1, buffer1); 
+client.publish("Solarpanel/001/LDR_wert_oben_rechts", buffer1); 
+
+dtostrf(unten_links,2, 1, buffer1); 
+client.publish("Solarpanel/001/LDR_wert_unten_links", buffer1); 
+
+dtostrf(unten_rechts,2, 1, buffer1); 
+client.publish("Solarpanel/001/LDR_wert_unten_rechts", buffer1); 
+
+
+  dtostrf(durchschnitt_oben,2, 1, buffer1); 
+client.publish("Solarpanel/001/LDR_ds_oben", buffer1); 
+
+dtostrf(durchschnitt_unten,2, 1, buffer1); 
+client.publish("Solarpanel/001/LDR_ds_unten", buffer1); 
+
+dtostrf(durchschnitt_links,2, 1, buffer1); 
+client.publish("Solarpanel/001/LDR_ds_links", buffer1); 
+
+dtostrf(durchschnitt_rechts,2, 1, buffer1); 
+client.publish("Solarpanel/001/LDR_ds_rechts", buffer1); 
+
+dtostrf(nachtstellung_merker,2, 1, buffer1); 
+client.publish("Solarpanel/001/codemeldung", buffer1);
+
+
+} 
+
 /////////////////////////////////////////////////////////////////////////// mqtt Panele senkrecht
 void mqtt_panele_senkrecht(){
   //Serial.println("FUNCTION ################################### mqtt Panele senkrecht");
@@ -899,11 +940,16 @@ ArduinoOTA.handle();
     }
 
   //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ Nachtstellung prüfen
+  if (millis() - previousMillis_ldr_werte_mqtt_senden > interval_ldr_werte_mqtt_senden) {
+      previousMillis_ldr_werte_mqtt_senden = millis(); 
+      mqtt_ldr_werte_senden();
+    }
+
+  //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ Nachtstellung prüfen
   if (millis() - previousMillis_nachtstellung_pruefen > interval_nachtstellung_pruefen) {
       previousMillis_nachtstellung_pruefen = millis(); 
       nachtstellung();
     }
-
 
   //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ LDR auslesen
   if (millis() - previousMillis_LDR_auslesen > interval_LDR_auslesen) {
