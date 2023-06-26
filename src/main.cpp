@@ -29,7 +29,7 @@ unsigned long previousMillis_morgenstellung_pruefen = 0; // Sturmschutz Schalter
 unsigned long interval_morgenstellung_pruefen = 100000;
 
 unsigned long previousMillis_ldr_werte_mqtt_senden = 0; // Sturmschutz Schalter prüfen
-unsigned long interval_ldr_werte_mqtt_senden = 20000;
+unsigned long interval_ldr_werte_mqtt_senden = 3000;
 
 /////////////////////////////////////////////////////////////////////////// Systemvariablen
 int nachtstellung_merker = 0; // Registriert die Nachstellung und wird morgens resetet.
@@ -43,13 +43,13 @@ int sturmschutzschalterpin =  13;
 int panelsenkrechtpin =  12;
 
 /////////////////////////////////////////////////////////////////////////// Schwellwerte
-int schwellwert_nachtstellung = 1300 ;  // 600Ab diesem Wert wird auf Nachtstellung gefahren
-int schwellwert_bewoelkt = 500 ;          // Schwellwert für Bewölkung
-int schwellwert_morgen_aktivieren = 600;  // Schwellwert von Sensor oben_links der die ersten
+int schwellwert_nachtstellung = 3200 ;  // 600Ab diesem Wert wird auf Nachtstellung gefahren
+int schwellwert_bewoelkt = 1000 ;          // Schwellwert für Bewölkung
+int schwellwert_morgen_aktivieren = 2000;  // Schwellwert von Sensor oben_links der die ersten
                                         // Sonnenstrahlen registriert
 int tolleranz_temp_errechnen;                                        
-int ausrichten_tolleranz_oben_unten = 45; // Ausgleichen von Schwankungen!
-int ausrichten_tolleranz_rechts_links = 60; // Ausgleichen von Schwankungen!
+int ausrichten_tolleranz_oben_unten = 100; // Ausgleichen von Schwankungen!
+int ausrichten_tolleranz_rechts_links = 100; // Ausgleichen von Schwankungen!
 
 int durchschnitt_oben;
 int durchschnitt_unten;
@@ -63,17 +63,17 @@ int anzahl_messungen = 50;
 int read_oben_links;
 int oben_links;
 int aufsummiert_oben_links;
-int sensor_driften_oben_links = 130; // Genauigkeit anpassen
+int sensor_driften_oben_links = 0; // Genauigkeit anpassen 130
 
 int read_oben_rechts;
 int oben_rechts;
 int aufsummiert_oben_rechts;
-int sensor_driften_oben_rechts = 0; // Genauigkeit anpassen -78
+int sensor_driften_oben_rechts = 0; // Genauigkeit anpassen 0
 
 int read_unten_links;
 int unten_links;
 int aufsummiert_unten_links;
-int sensor_driften_unten_links = 90; // Genauigkeit anpassen -100
+int sensor_driften_unten_links = 0; // Genauigkeit anpassen 90
 
 int read_unten_rechts;
 int unten_rechts;
@@ -95,13 +95,13 @@ Sensor-Leitung orange +5V
 Sensor-Leitung weis Masse
 */
 //int oben_links;
-const int ldr_oben_links = 32; //ADC1_6   - LDR OL - Sensor-Leitung blau  (NW) OR 33
+const int ldr_oben_links = 33; //ADC1_6   - LDR OL - Sensor-Leitung blau  (NW) OR 33 / 32
 //int oben_rechts;
-const int ldr_oben_rechts = 33; //ADC1_7  - LDR OR - Sensor-Leitung braun (NO)  32
+const int ldr_oben_rechts = 32; //ADC1_7  - LDR OR - Sensor-Leitung braun (NO)  32 / 33
 //int unten_links;
-const int ldr_unten_links = 35; //ADC1_8  - LDR UL - Sensor-Leitung grün  (SW) BR 34
+const int ldr_unten_links = 34; //ADC1_8  - LDR UL - Sensor-Leitung grün  (SW) BR 34 / 35
 //int unten_rechts;
-const int ldr_unten_rechts = 34; //ADC1_9 - LDR UR - Sensor-Leitung weiss (SO ) WS 35
+const int ldr_unten_rechts = 35; //ADC1_9 - LDR UR - Sensor-Leitung weiss (SO ) WS 35 /34
 
 /////////////////////////////////////////////////////////////////////////// Funktionsprototypen
 void loop                       ();
@@ -506,7 +506,7 @@ durchschnitt_rechts = (oben_rechts + unten_rechts); //Durchschnitt von rechts
 durchschnitt_bewoelkt = (oben_links + oben_rechts + unten_links + unten_rechts) / 4;
 
 // Ausrichten des Panel am morgen
-if ((oben_links < schwellwert_morgen_aktivieren) && nachtstellung_merker == 1)
+if ((oben_rechts < schwellwert_morgen_aktivieren) && nachtstellung_merker == 1)
 {
   //client.publish("Solarpanel/001/meldung", "Morgen ausrichten");
   // Sobald der Sensor oben_links unter den Schwellwert fällt, Panele in morgenstellung bringen
